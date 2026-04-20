@@ -6,6 +6,7 @@ use tiny_skia::{Color, Pixmap};
 use crate::text::TextCtx;
 
 /// Render a readout widget into `pixmap`.
+#[allow(clippy::too_many_arguments)]
 pub fn render_readout(
     pixmap: &mut Pixmap,
     text_ctx: &mut TextCtx,

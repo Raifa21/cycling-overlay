@@ -63,7 +63,7 @@ impl FfmpegWriter {
     }
 
     /// Close stdin and wait for ffmpeg to exit. Returns Err with stderr on failure.
-    pub fn finish(mut self) -> anyhow::Result<()> {
+    pub fn finish(self) -> anyhow::Result<()> {
         // Drop stdin so ffmpeg sees EOF.
         drop(self.stdin);
         let output = self.child.wait_with_output()?;
@@ -91,7 +91,7 @@ mod tests {
         let mut writer = FfmpegWriter::new(w, h, 10, 11, &out).unwrap();
         let mut frame = vec![0u8; (w * h * 4) as usize];
         for i in 0..frame.len() / 4 {
-            frame[i * 4 + 0] = 255; // R
+            frame[i * 4] = 255;     // R
             frame[i * 4 + 1] = 0;   // G
             frame[i * 4 + 2] = 0;   // B
             frame[i * 4 + 3] = 255; // A

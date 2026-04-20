@@ -48,11 +48,11 @@ mod tests {
     #[test]
     fn moving_avg_flattens_alternating_noise() {
         // 10 samples, 1 Hz, alternating 1.0/3.0 → smoothed ≈ 2.0 in middle.
-        let ts: Vec<Duration> = (0..10).map(|i| Duration::from_secs(i)).collect();
+        let ts: Vec<Duration> = (0..10).map(Duration::from_secs).collect();
         let vs: Vec<f32> = vec![1.0, 3.0, 1.0, 3.0, 1.0, 3.0, 1.0, 3.0, 1.0, 3.0];
         let out = moving_avg_time(&ts, &vs, Duration::from_secs(3));
         for (i, v) in out.iter().enumerate() {
-            if i >= 2 && i < 8 {
+            if (2..8).contains(&i) {
                 assert!((v - 2.0).abs() < 0.2, "index {} got {}", i, v);
             }
         }
@@ -60,7 +60,7 @@ mod tests {
 
     #[test]
     fn moving_avg_identity_for_constant() {
-        let ts: Vec<Duration> = (0..5).map(|i| Duration::from_secs(i)).collect();
+        let ts: Vec<Duration> = (0..5).map(Duration::from_secs).collect();
         let vs: Vec<f32> = vec![7.0, 7.0, 7.0, 7.0, 7.0];
         let out = moving_avg_time(&ts, &vs, Duration::from_secs(3));
         for v in out {

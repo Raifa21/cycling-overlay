@@ -34,6 +34,7 @@ impl Metric {
         }
     }
 
+    #[allow(clippy::should_implement_trait)]
     pub fn from_str(s: &str) -> Option<Metric> {
         match s {
             "speed" => Some(Metric::Speed),

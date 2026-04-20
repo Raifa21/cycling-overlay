@@ -39,11 +39,13 @@ impl Iterator for FrameScheduler {
 /// at `next_expected`. If the buffer grows past `cap`, callers should
 /// block before pushing more (synchronization is the caller's problem).
 pub struct ReorderBuffer {
+    #[allow(dead_code)] // kept for future tuning
     cap: usize,
     next_expected: u64,
     map: BTreeMap<u64, Vec<u8>>,
 }
 
+#[allow(dead_code)] // kept for future tuning
 impl ReorderBuffer {
     pub fn new(cap: usize) -> Self {
         Self { cap, next_expected: 0, map: BTreeMap::new() }
@@ -62,11 +64,9 @@ impl ReorderBuffer {
     /// Returns the buffers in order. Advances `next_expected` past them.
     pub fn drain_ready(&mut self) -> Vec<Vec<u8>> {
         let mut out = Vec::new();
-        loop {
-            match self.map.remove(&self.next_expected) {
-                Some(b) => { out.push(b); self.next_expected += 1; }
-                None => break,
-            }
+        while let Some(b) = self.map.remove(&self.next_expected) {
+            out.push(b);
+            self.next_expected += 1;
         }
         out
     }
