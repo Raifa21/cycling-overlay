@@ -14,7 +14,7 @@ pub struct Sample {
     pub distance_m: Option<f64>,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct Activity {
     pub start_time: DateTime<Utc>,
     pub samples: Vec<Sample>,
