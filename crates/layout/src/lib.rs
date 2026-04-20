@@ -1,5 +1,8 @@
 use serde::{Deserialize, Serialize};
 
+mod validate;
+pub use validate::{MetricCatalog, ValidationError, Warning};
+
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct Layout {
     pub version: u32,
