@@ -103,8 +103,12 @@ pub fn load_fit(path: &Path) -> Result<Activity, FitError> {
         let elapsed = ts_utc.signed_duration_since(start);
         let t = elapsed.to_std().unwrap_or(Duration::ZERO);
 
-        let lat = field(fields, "position_lat").and_then(semicircle_to_deg).unwrap_or(0.0);
-        let lon = field(fields, "position_long").and_then(semicircle_to_deg).unwrap_or(0.0);
+        let lat = field(fields, "position_lat")
+            .and_then(semicircle_to_deg)
+            .unwrap_or(0.0);
+        let lon = field(fields, "position_long")
+            .and_then(semicircle_to_deg)
+            .unwrap_or(0.0);
 
         // Prefer enhanced_* over base fields when both are present.
         let altitude_m = field(fields, "enhanced_altitude")

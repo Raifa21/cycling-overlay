@@ -197,16 +197,22 @@ fn elevation_profile_matches_golden() {
 
     let mut ctx = TextCtx::new();
     let mut pix = Pixmap::new(500, 120).unwrap();
-    render_frame(&layout, &activity, Duration::from_secs(10), &mut ctx, &mut pix).unwrap();
+    render_frame(
+        &layout,
+        &activity,
+        Duration::from_secs(10),
+        &mut ctx,
+        &mut pix,
+    )
+    .unwrap();
 
     assert_golden(&pix, "elev_mid.png");
 }
 
 fn assert_golden(pix: &Pixmap, name: &str) {
     let golden_path = Path::new("tests/golden").join(name);
-    let actual_img: RgbaImage =
-        RgbaImage::from_raw(pix.width(), pix.height(), pix.data().to_vec())
-            .expect("pixmap -> image");
+    let actual_img: RgbaImage = RgbaImage::from_raw(pix.width(), pix.height(), pix.data().to_vec())
+        .expect("pixmap -> image");
 
     if !golden_path.exists() {
         // First run — write the golden for the user to inspect and commit.

@@ -123,7 +123,13 @@ pub fn render_course(
         let mut paint = Paint::default();
         paint.set_color(accent);
         paint.anti_alias = true;
-        pixmap.fill_path(&path, &paint, FillRule::Winding, Transform::identity(), None);
+        pixmap.fill_path(
+            &path,
+            &paint,
+            FillRule::Winding,
+            Transform::identity(),
+            None,
+        );
     }
 }
 

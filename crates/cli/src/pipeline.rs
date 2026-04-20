@@ -17,16 +17,25 @@ impl FrameScheduler {
         debug_assert!(to >= from);
         let span = (to - from).as_secs_f64();
         let total_frames = (span * fps as f64).round() as u64;
-        Self { fps, from, total_frames, next_idx: 0 }
+        Self {
+            fps,
+            from,
+            total_frames,
+            next_idx: 0,
+        }
     }
 
-    pub fn total_frames(&self) -> u64 { self.total_frames }
+    pub fn total_frames(&self) -> u64 {
+        self.total_frames
+    }
 }
 
 impl Iterator for FrameScheduler {
     type Item = (u64, Duration);
     fn next(&mut self) -> Option<Self::Item> {
-        if self.next_idx >= self.total_frames { return None; }
+        if self.next_idx >= self.total_frames {
+            return None;
+        }
         let idx = self.next_idx;
         self.next_idx += 1;
         let t = self.from + Duration::from_secs_f64(idx as f64 / self.fps as f64);
@@ -48,13 +57,25 @@ pub struct ReorderBuffer {
 #[allow(dead_code)] // kept for future tuning
 impl ReorderBuffer {
     pub fn new(cap: usize) -> Self {
-        Self { cap, next_expected: 0, map: BTreeMap::new() }
+        Self {
+            cap,
+            next_expected: 0,
+            map: BTreeMap::new(),
+        }
     }
 
-    pub fn len(&self) -> usize { self.map.len() }
-    pub fn is_full(&self) -> bool { self.map.len() >= self.cap }
-    pub fn cap(&self) -> usize { self.cap }
-    pub fn next_expected(&self) -> u64 { self.next_expected }
+    pub fn len(&self) -> usize {
+        self.map.len()
+    }
+    pub fn is_full(&self) -> bool {
+        self.map.len() >= self.cap
+    }
+    pub fn cap(&self) -> usize {
+        self.cap
+    }
+    pub fn next_expected(&self) -> u64 {
+        self.next_expected
+    }
 
     pub fn push(&mut self, idx: u64, bytes: Vec<u8>) {
         self.map.insert(idx, bytes);

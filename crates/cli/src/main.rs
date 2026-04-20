@@ -38,9 +38,17 @@ fn classify_error(err: &anyhow::Error) -> i32 {
     // Simple substring heuristics. A proper version uses typed errors at
     // module boundaries, but this is enough for v1.
     let msg = format!("{:#}", err);
-    if msg.contains("ffmpeg") || msg.contains("pixmap") || msg.contains("Pixmap") || msg.contains("render_frame") {
+    if msg.contains("ffmpeg")
+        || msg.contains("pixmap")
+        || msg.contains("Pixmap")
+        || msg.contains("render_frame")
+    {
         3
-    } else if msg.contains("parse") || msg.contains("JSON") || msg.contains("GPX") || msg.contains("FIT") {
+    } else if msg.contains("parse")
+        || msg.contains("JSON")
+        || msg.contains("GPX")
+        || msg.contains("FIT")
+    {
         2
     } else {
         1

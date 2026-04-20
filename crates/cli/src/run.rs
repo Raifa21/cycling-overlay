@@ -37,10 +37,8 @@ pub fn load_and_validate(args: &RenderArgs) -> Result<Loaded> {
         .ok_or_else(|| anyhow!("input file has no extension: {:?}", args.input))?
         .to_ascii_lowercase();
     let mut activity = match input_ext.as_str() {
-        "gpx" => load_gpx(&args.input)
-            .with_context(|| format!("loading GPX {:?}", args.input))?,
-        "fit" => load_fit(&args.input)
-            .with_context(|| format!("loading FIT {:?}", args.input))?,
+        "gpx" => load_gpx(&args.input).with_context(|| format!("loading GPX {:?}", args.input))?,
+        "fit" => load_fit(&args.input).with_context(|| format!("loading FIT {:?}", args.input))?,
         other => {
             return Err(anyhow!(
                 "unsupported input extension '{}'; use .gpx or .fit",
@@ -90,11 +88,7 @@ pub fn load_and_validate(args: &RenderArgs) -> Result<Loaded> {
     let from = args.from.unwrap_or(Duration::ZERO);
     let to = args.to.unwrap_or(activity_duration);
     if from > to {
-        return Err(anyhow!(
-            "--from ({:?}) is after --to ({:?})",
-            from,
-            to
-        ));
+        return Err(anyhow!("--from ({:?}) is after --to ({:?})", from, to));
     }
     if from > activity_duration {
         return Err(anyhow!(
@@ -143,7 +137,9 @@ pub fn render(args: &RenderArgs) -> Result<()> {
     // Hint rayon's thread count if user passed --threads.
     // Best-effort: silently ignore if a pool is already built.
     if let Some(n) = args.threads {
-        let _ = rayon::ThreadPoolBuilder::new().num_threads(n).build_global();
+        let _ = rayon::ThreadPoolBuilder::new()
+            .num_threads(n)
+            .build_global();
     }
 
     let loaded = load_and_validate(args)?;
@@ -171,8 +167,7 @@ pub fn render(args: &RenderArgs) -> Result<()> {
     // Progress bar.
     let pb = ProgressBar::new(total);
     pb.set_style(
-        ProgressStyle::with_template("{bar:40.cyan/blue} {pos}/{len} frames | ETA {eta}")
-            .unwrap(),
+        ProgressStyle::with_template("{bar:40.cyan/blue} {pos}/{len} frames | ETA {eta}").unwrap(),
     );
 
     // Bounded channel; capacity equals reorder-buffer cap so back-pressure

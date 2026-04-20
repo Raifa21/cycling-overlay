@@ -67,10 +67,7 @@ impl TextCtx {
         {
             let mut bw = buffer.borrow_with(&mut self.font_system);
             // Size the layout box so text doesn't silently wrap to zero width.
-            bw.set_size(
-                Some(pixmap.width() as f32),
-                Some(pixmap.height() as f32),
-            );
+            bw.set_size(Some(pixmap.width() as f32), Some(pixmap.height() as f32));
             bw.set_text(
                 text,
                 Attrs::new().family(Family::Name("Inter")),
@@ -126,8 +123,7 @@ impl TextCtx {
                         data[idx] = (src_r + dr * inv).round().clamp(0.0, 255.0) as u8;
                         data[idx + 1] = (src_g + dg * inv).round().clamp(0.0, 255.0) as u8;
                         data[idx + 2] = (src_b + db_ * inv).round().clamp(0.0, 255.0) as u8;
-                        data[idx + 3] =
-                            (cov as f32 + da * inv).round().clamp(0.0, 255.0) as u8;
+                        data[idx + 3] = (cov as f32 + da * inv).round().clamp(0.0, 255.0) as u8;
                     }
                 }
             },

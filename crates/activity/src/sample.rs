@@ -13,7 +13,7 @@ pub struct Sample {
     pub power_w: Option<u16>,
     pub distance_m: Option<f64>,
     pub elev_gain_cum_m: Option<f32>,
-    pub gradient_pct: Option<f32>,  // percent slope (vertical/horizontal × 100)
+    pub gradient_pct: Option<f32>, // percent slope (vertical/horizontal × 100)
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -24,7 +24,10 @@ pub struct Activity {
 
 impl Activity {
     pub fn from_samples(start_time: DateTime<Utc>, samples: Vec<Sample>) -> Self {
-        Self { start_time, samples }
+        Self {
+            start_time,
+            samples,
+        }
     }
 
     pub fn duration(&self) -> Duration {
@@ -78,10 +81,9 @@ impl Activity {
             } else {
                 (i - 1, i + 1)
             };
-            let (Some(d_lo), Some(d_hi)) = (
-                self.samples[j_lo].distance_m,
-                self.samples[j_hi].distance_m,
-            ) else {
+            let (Some(d_lo), Some(d_hi)) =
+                (self.samples[j_lo].distance_m, self.samples[j_hi].distance_m)
+            else {
                 continue; // can't derive without both distances
             };
             let dt = self.samples[j_hi].t.as_secs_f64() - self.samples[j_lo].t.as_secs_f64();
@@ -188,7 +190,9 @@ impl Activity {
             let mut j = i;
             while j > 0 {
                 if let Some(dj) = d[j - 1] {
-                    if d_i - dj > half { break; }
+                    if d_i - dj > half {
+                        break;
+                    }
                     j -= 1;
                 } else {
                     break;
@@ -197,7 +201,9 @@ impl Activity {
             let mut k = i;
             while k + 1 < n {
                 if let Some(dk) = d[k + 1] {
-                    if dk - d_i > half { break; }
+                    if dk - d_i > half {
+                        break;
+                    }
                     k += 1;
                 } else {
                     break;
@@ -248,9 +254,13 @@ impl Activity {
 
         // Clamp.
         let first = &self.samples[0];
-        if t <= first.t { return first.clone(); }
+        if t <= first.t {
+            return first.clone();
+        }
         let last = self.samples.last().unwrap();
-        if t >= last.t { return last.clone(); }
+        if t >= last.t {
+            return last.clone();
+        }
 
         // Binary search for the pair (i-1, i) bracketing t.
         let idx = match self.samples.binary_search_by_key(&t, |s| s.t) {
@@ -329,10 +339,14 @@ impl Sample {
     pub(crate) fn blank() -> Self {
         Sample {
             t: std::time::Duration::ZERO,
-            lat: 0.0, lon: 0.0,
-            altitude_m: None, speed_mps: None,
-            heart_rate_bpm: None, cadence_rpm: None,
-            power_w: None, distance_m: None,
+            lat: 0.0,
+            lon: 0.0,
+            altitude_m: None,
+            speed_mps: None,
+            heart_rate_bpm: None,
+            cadence_rpm: None,
+            power_w: None,
+            distance_m: None,
             elev_gain_cum_m: None,
             gradient_pct: None,
         }
@@ -347,13 +361,19 @@ mod tests {
 
     #[test]
     fn from_samples_builds_activity() {
-        let samples = vec![
-            Sample { t: Duration::from_secs(0), lat: 0.0, lon: 0.0,
-                     altitude_m: Some(100.0), speed_mps: None,
-                     heart_rate_bpm: None, cadence_rpm: None,
-                     power_w: None, distance_m: None,
-                     elev_gain_cum_m: None, gradient_pct: None },
-        ];
+        let samples = vec![Sample {
+            t: Duration::from_secs(0),
+            lat: 0.0,
+            lon: 0.0,
+            altitude_m: Some(100.0),
+            speed_mps: None,
+            heart_rate_bpm: None,
+            cadence_rpm: None,
+            power_w: None,
+            distance_m: None,
+            elev_gain_cum_m: None,
+            gradient_pct: None,
+        }];
         let a = Activity::from_samples(Utc.timestamp_opt(0, 0).unwrap(), samples);
         assert_eq!(a.samples.len(), 1);
         assert_eq!(a.duration(), Duration::from_secs(0));
@@ -364,7 +384,12 @@ mod tests {
         use chrono::Utc;
         use std::time::Duration;
         let samples = vec![
-            Sample { t: Duration::ZERO, lat: 0.0, lon: 0.0, ..Sample::blank() },
+            Sample {
+                t: Duration::ZERO,
+                lat: 0.0,
+                lon: 0.0,
+                ..Sample::blank()
+            },
             Sample {
                 t: Duration::from_secs(1),
                 lat: 0.0,
@@ -384,8 +409,20 @@ mod tests {
         use chrono::Utc;
         use std::time::Duration;
         let samples = vec![
-            Sample { t: Duration::ZERO, lat: 0.0, lon: 0.0, distance_m: Some(5.0), ..Sample::blank() },
-            Sample { t: Duration::from_secs(1), lat: 0.0, lon: 0.001, distance_m: Some(20.0), ..Sample::blank() },
+            Sample {
+                t: Duration::ZERO,
+                lat: 0.0,
+                lon: 0.0,
+                distance_m: Some(5.0),
+                ..Sample::blank()
+            },
+            Sample {
+                t: Duration::from_secs(1),
+                lat: 0.0,
+                lon: 0.001,
+                distance_m: Some(20.0),
+                ..Sample::blank()
+            },
         ];
         let mut a = Activity::from_samples(Utc::now(), samples);
         a.fill_derived_distance();
@@ -399,7 +436,8 @@ mod tests {
         let samples: Vec<Sample> = (0..11)
             .map(|i| Sample {
                 t: Duration::from_secs(i as u64),
-                lat: 0.0, lon: 0.0,
+                lat: 0.0,
+                lon: 0.0,
                 distance_m: Some(i as f64 * 10.0),
                 ..Sample::blank()
             })
@@ -417,13 +455,19 @@ mod tests {
     fn fill_speed_noop_when_present() {
         let samples = vec![
             Sample {
-                t: Duration::ZERO, lat: 0.0, lon: 0.0,
-                distance_m: Some(0.0), speed_mps: Some(5.0),
+                t: Duration::ZERO,
+                lat: 0.0,
+                lon: 0.0,
+                distance_m: Some(0.0),
+                speed_mps: Some(5.0),
                 ..Sample::blank()
             },
             Sample {
-                t: Duration::from_secs(1), lat: 0.0, lon: 0.0,
-                distance_m: Some(10.0), speed_mps: Some(5.0),
+                t: Duration::from_secs(1),
+                lat: 0.0,
+                lon: 0.0,
+                distance_m: Some(10.0),
+                speed_mps: Some(5.0),
                 ..Sample::blank()
             },
         ];
@@ -440,7 +484,8 @@ mod tests {
         let samples: Vec<Sample> = (0..11)
             .map(|i| Sample {
                 t: Duration::from_secs(i as u64),
-                lat: 0.0, lon: 0.0,
+                lat: 0.0,
+                lon: 0.0,
                 distance_m: Some(i as f64 * 10.0),
                 ..Sample::blank()
             })
@@ -455,9 +500,27 @@ mod tests {
     fn fill_speed_irregular_dt() {
         // t = [0, 1, 3], d = [0, 5, 25] → at i=1 central diff = (25-0)/(3-0) = 8.333
         let samples = vec![
-            Sample { t: Duration::from_secs(0), lat: 0.0, lon: 0.0, distance_m: Some(0.0),  ..Sample::blank() },
-            Sample { t: Duration::from_secs(1), lat: 0.0, lon: 0.0, distance_m: Some(5.0),  ..Sample::blank() },
-            Sample { t: Duration::from_secs(3), lat: 0.0, lon: 0.0, distance_m: Some(25.0), ..Sample::blank() },
+            Sample {
+                t: Duration::from_secs(0),
+                lat: 0.0,
+                lon: 0.0,
+                distance_m: Some(0.0),
+                ..Sample::blank()
+            },
+            Sample {
+                t: Duration::from_secs(1),
+                lat: 0.0,
+                lon: 0.0,
+                distance_m: Some(5.0),
+                ..Sample::blank()
+            },
+            Sample {
+                t: Duration::from_secs(3),
+                lat: 0.0,
+                lon: 0.0,
+                distance_m: Some(25.0),
+                ..Sample::blank()
+            },
         ];
         let mut a = Activity::from_samples(Utc::now(), samples);
         a.fill_derived_speed();
@@ -469,9 +532,27 @@ mod tests {
     fn fill_speed_skips_when_neighbor_distance_missing() {
         // Middle sample has no neighbors with distance → speed stays None.
         let samples = vec![
-            Sample { t: Duration::from_secs(0), lat: 0.0, lon: 0.0, distance_m: None,       ..Sample::blank() },
-            Sample { t: Duration::from_secs(1), lat: 0.0, lon: 0.0, distance_m: None,       ..Sample::blank() },
-            Sample { t: Duration::from_secs(2), lat: 0.0, lon: 0.0, distance_m: None,       ..Sample::blank() },
+            Sample {
+                t: Duration::from_secs(0),
+                lat: 0.0,
+                lon: 0.0,
+                distance_m: None,
+                ..Sample::blank()
+            },
+            Sample {
+                t: Duration::from_secs(1),
+                lat: 0.0,
+                lon: 0.0,
+                distance_m: None,
+                ..Sample::blank()
+            },
+            Sample {
+                t: Duration::from_secs(2),
+                lat: 0.0,
+                lon: 0.0,
+                distance_m: None,
+                ..Sample::blank()
+            },
         ];
         let mut a = Activity::from_samples(Utc::now(), samples);
         a.fill_derived_speed();
@@ -480,12 +561,15 @@ mod tests {
 
     #[test]
     fn smooth_speed_flattens_alternation() {
-        let samples: Vec<Sample> = (0..10).map(|i| Sample {
-            t: Duration::from_secs(i as u64),
-            lat: 0.0, lon: 0.0,
-            speed_mps: Some(if i % 2 == 0 { 1.0 } else { 3.0 }),
-            ..Sample::blank()
-        }).collect();
+        let samples: Vec<Sample> = (0..10)
+            .map(|i| Sample {
+                t: Duration::from_secs(i as u64),
+                lat: 0.0,
+                lon: 0.0,
+                speed_mps: Some(if i % 2 == 0 { 1.0 } else { 3.0 }),
+                ..Sample::blank()
+            })
+            .collect();
         let mut a = Activity::from_samples(Utc::now(), samples);
         a.smooth_speed(Duration::from_secs(3));
         for i in 2..8 {
@@ -496,12 +580,15 @@ mod tests {
 
     #[test]
     fn smooth_altitude_flattens_jitter() {
-        let samples: Vec<Sample> = (0..10).map(|i| Sample {
-            t: Duration::from_secs(i as u64),
-            lat: 0.0, lon: 0.0,
-            altitude_m: Some(if i % 2 == 0 { 100.0 } else { 110.0 }),
-            ..Sample::blank()
-        }).collect();
+        let samples: Vec<Sample> = (0..10)
+            .map(|i| Sample {
+                t: Duration::from_secs(i as u64),
+                lat: 0.0,
+                lon: 0.0,
+                altitude_m: Some(if i % 2 == 0 { 100.0 } else { 110.0 }),
+                ..Sample::blank()
+            })
+            .collect();
         let mut a = Activity::from_samples(Utc::now(), samples);
         a.smooth_altitude(Duration::from_secs(5));
         for i in 2..8 {
@@ -513,12 +600,15 @@ mod tests {
     #[test]
     fn elev_gain_counts_net_climb() {
         // 21 samples, altitude climbs linearly 100 → 200 (100m total gain).
-        let samples: Vec<Sample> = (0..21).map(|i| Sample {
-            t: Duration::from_secs(i as u64),
-            lat: 0.0, lon: 0.0,
-            altitude_m: Some(100.0 + (i as f32) * 5.0),  // 100, 105, 110, ..., 200
-            ..Sample::blank()
-        }).collect();
+        let samples: Vec<Sample> = (0..21)
+            .map(|i| Sample {
+                t: Duration::from_secs(i as u64),
+                lat: 0.0,
+                lon: 0.0,
+                altitude_m: Some(100.0 + (i as f32) * 5.0), // 100, 105, 110, ..., 200
+                ..Sample::blank()
+            })
+            .collect();
         let mut a = Activity::from_samples(Utc::now(), samples);
         a.fill_elev_gain(3.0);
         let total = a.samples.last().unwrap().elev_gain_cum_m.unwrap();
@@ -528,16 +618,19 @@ mod tests {
     #[test]
     fn elev_gain_ignores_noise_below_threshold() {
         // 51 samples, altitude noisy ±1m around a linear climb 100 → 150 (50m net).
-        let samples: Vec<Sample> = (0..51).map(|i| {
-            let base = 100.0 + (i as f32);  // +1 m per sample over 50 samples -> +50 m
-            let noise = if i % 2 == 0 { -1.0 } else { 1.0 }; // ±1 m
-            Sample {
-                t: Duration::from_secs(i as u64),
-                lat: 0.0, lon: 0.0,
-                altitude_m: Some(base + noise),
-                ..Sample::blank()
-            }
-        }).collect();
+        let samples: Vec<Sample> = (0..51)
+            .map(|i| {
+                let base = 100.0 + (i as f32); // +1 m per sample over 50 samples -> +50 m
+                let noise = if i % 2 == 0 { -1.0 } else { 1.0 }; // ±1 m
+                Sample {
+                    t: Duration::from_secs(i as u64),
+                    lat: 0.0,
+                    lon: 0.0,
+                    altitude_m: Some(base + noise),
+                    ..Sample::blank()
+                }
+            })
+            .collect();
         let mut a = Activity::from_samples(Utc::now(), samples);
         a.fill_elev_gain(3.0);
         let total = a.samples.last().unwrap().elev_gain_cum_m.unwrap();
@@ -551,13 +644,16 @@ mod tests {
     fn gradient_constant_10_percent_climb() {
         // altitude rises 1.0 m per sample, distance increases 10.0 m per sample,
         // so gradient should be 10.0%. 30 samples to get plenty of interior.
-        let samples: Vec<Sample> = (0..30).map(|i| Sample {
-            t: Duration::from_secs(i as u64),
-            lat: 0.0, lon: 0.0,
-            altitude_m: Some((i as f32) * 1.0),
-            distance_m: Some((i as f64) * 10.0),
-            ..Sample::blank()
-        }).collect();
+        let samples: Vec<Sample> = (0..30)
+            .map(|i| Sample {
+                t: Duration::from_secs(i as u64),
+                lat: 0.0,
+                lon: 0.0,
+                altitude_m: Some((i as f32) * 1.0),
+                distance_m: Some((i as f64) * 10.0),
+                ..Sample::blank()
+            })
+            .collect();
         let mut a = Activity::from_samples(Utc::now(), samples);
         a.fill_gradient(50.0);
         // Middle should be within a fraction of 10%.
@@ -567,13 +663,16 @@ mod tests {
 
     #[test]
     fn gradient_zero_on_flat() {
-        let samples: Vec<Sample> = (0..30).map(|i| Sample {
-            t: Duration::from_secs(i as u64),
-            lat: 0.0, lon: 0.0,
-            altitude_m: Some(100.0),
-            distance_m: Some((i as f64) * 10.0),
-            ..Sample::blank()
-        }).collect();
+        let samples: Vec<Sample> = (0..30)
+            .map(|i| Sample {
+                t: Duration::from_secs(i as u64),
+                lat: 0.0,
+                lon: 0.0,
+                altitude_m: Some(100.0),
+                distance_m: Some((i as f64) * 10.0),
+                ..Sample::blank()
+            })
+            .collect();
         let mut a = Activity::from_samples(Utc::now(), samples);
         a.fill_gradient(50.0);
         for s in &a.samples[5..25] {
@@ -583,13 +682,16 @@ mod tests {
 
     #[test]
     fn gradient_none_when_altitude_missing() {
-        let samples: Vec<Sample> = (0..10).map(|i| Sample {
-            t: Duration::from_secs(i as u64),
-            lat: 0.0, lon: 0.0,
-            altitude_m: None,
-            distance_m: Some((i as f64) * 10.0),
-            ..Sample::blank()
-        }).collect();
+        let samples: Vec<Sample> = (0..10)
+            .map(|i| Sample {
+                t: Duration::from_secs(i as u64),
+                lat: 0.0,
+                lon: 0.0,
+                altitude_m: None,
+                distance_m: Some((i as f64) * 10.0),
+                ..Sample::blank()
+            })
+            .collect();
         let mut a = Activity::from_samples(Utc::now(), samples);
         a.fill_gradient(50.0);
         assert!(a.samples.iter().all(|s| s.gradient_pct.is_none()));
@@ -598,10 +700,20 @@ mod tests {
     #[test]
     fn sample_at_interpolates_speed_linearly() {
         let s = vec![
-            Sample { t: Duration::from_secs(0), lat: 0.0, lon: 0.0,
-                     speed_mps: Some(10.0), ..Sample::blank() },
-            Sample { t: Duration::from_secs(10), lat: 0.0, lon: 0.0,
-                     speed_mps: Some(20.0), ..Sample::blank() },
+            Sample {
+                t: Duration::from_secs(0),
+                lat: 0.0,
+                lon: 0.0,
+                speed_mps: Some(10.0),
+                ..Sample::blank()
+            },
+            Sample {
+                t: Duration::from_secs(10),
+                lat: 0.0,
+                lon: 0.0,
+                speed_mps: Some(20.0),
+                ..Sample::blank()
+            },
         ];
         let a = Activity::from_samples(Utc::now(), s);
         let mid = a.sample_at(Duration::from_secs(5));
@@ -611,10 +723,20 @@ mod tests {
     #[test]
     fn sample_at_clamps_before_start() {
         let s = vec![
-            Sample { t: Duration::from_secs(0), lat: 0.0, lon: 0.0,
-                     speed_mps: Some(10.0), ..Sample::blank() },
-            Sample { t: Duration::from_secs(10), lat: 0.0, lon: 0.0,
-                     speed_mps: Some(20.0), ..Sample::blank() },
+            Sample {
+                t: Duration::from_secs(0),
+                lat: 0.0,
+                lon: 0.0,
+                speed_mps: Some(10.0),
+                ..Sample::blank()
+            },
+            Sample {
+                t: Duration::from_secs(10),
+                lat: 0.0,
+                lon: 0.0,
+                speed_mps: Some(20.0),
+                ..Sample::blank()
+            },
         ];
         let a = Activity::from_samples(Utc::now(), s);
         // Durations can't be negative, so "before start" means exactly 0.
@@ -625,10 +747,20 @@ mod tests {
     #[test]
     fn sample_at_clamps_after_end() {
         let s = vec![
-            Sample { t: Duration::from_secs(0), lat: 0.0, lon: 0.0,
-                     speed_mps: Some(10.0), ..Sample::blank() },
-            Sample { t: Duration::from_secs(10), lat: 0.0, lon: 0.0,
-                     speed_mps: Some(20.0), ..Sample::blank() },
+            Sample {
+                t: Duration::from_secs(0),
+                lat: 0.0,
+                lon: 0.0,
+                speed_mps: Some(10.0),
+                ..Sample::blank()
+            },
+            Sample {
+                t: Duration::from_secs(10),
+                lat: 0.0,
+                lon: 0.0,
+                speed_mps: Some(20.0),
+                ..Sample::blank()
+            },
         ];
         let a = Activity::from_samples(Utc::now(), s);
         let out = a.sample_at(Duration::from_secs(100));
@@ -638,8 +770,18 @@ mod tests {
     #[test]
     fn sample_at_interpolates_lat_lon() {
         let s = vec![
-            Sample { t: Duration::from_secs(0), lat: 0.0, lon: 0.0, ..Sample::blank() },
-            Sample { t: Duration::from_secs(10), lat: 1.0, lon: 2.0, ..Sample::blank() },
+            Sample {
+                t: Duration::from_secs(0),
+                lat: 0.0,
+                lon: 0.0,
+                ..Sample::blank()
+            },
+            Sample {
+                t: Duration::from_secs(10),
+                lat: 1.0,
+                lon: 2.0,
+                ..Sample::blank()
+            },
         ];
         let a = Activity::from_samples(Utc::now(), s);
         let mid = a.sample_at(Duration::from_secs(5));
@@ -650,10 +792,20 @@ mod tests {
     #[test]
     fn sample_at_uses_nearest_for_cadence() {
         let s = vec![
-            Sample { t: Duration::from_secs(0), lat: 0.0, lon: 0.0,
-                     cadence_rpm: Some(80), ..Sample::blank() },
-            Sample { t: Duration::from_secs(10), lat: 0.0, lon: 0.0,
-                     cadence_rpm: Some(90), ..Sample::blank() },
+            Sample {
+                t: Duration::from_secs(0),
+                lat: 0.0,
+                lon: 0.0,
+                cadence_rpm: Some(80),
+                ..Sample::blank()
+            },
+            Sample {
+                t: Duration::from_secs(10),
+                lat: 0.0,
+                lon: 0.0,
+                cadence_rpm: Some(90),
+                ..Sample::blank()
+            },
         ];
         let a = Activity::from_samples(Utc::now(), s);
         let near_first = a.sample_at(Duration::from_secs(3));
@@ -665,10 +817,20 @@ mod tests {
     #[test]
     fn sample_at_none_when_either_endpoint_none() {
         let s = vec![
-            Sample { t: Duration::from_secs(0), lat: 0.0, lon: 0.0,
-                     heart_rate_bpm: None, ..Sample::blank() },
-            Sample { t: Duration::from_secs(10), lat: 0.0, lon: 0.0,
-                     heart_rate_bpm: Some(150), ..Sample::blank() },
+            Sample {
+                t: Duration::from_secs(0),
+                lat: 0.0,
+                lon: 0.0,
+                heart_rate_bpm: None,
+                ..Sample::blank()
+            },
+            Sample {
+                t: Duration::from_secs(10),
+                lat: 0.0,
+                lon: 0.0,
+                heart_rate_bpm: Some(150),
+                ..Sample::blank()
+            },
         ];
         let a = Activity::from_samples(Utc::now(), s);
         let mid = a.sample_at(Duration::from_secs(5));
@@ -691,16 +853,22 @@ mod tests {
     #[test]
     fn elev_gain_does_not_subtract_on_descent() {
         // 21 samples, altitude: 100 → 200 (first 11 samples), then 200 → 100 (last 10).
-        let samples: Vec<Sample> = (0..21).map(|i| {
-            let alt = if i <= 10 { 100.0 + (i as f32) * 10.0 }
-                      else { 200.0 - ((i - 10) as f32) * 10.0 };
-            Sample {
-                t: Duration::from_secs(i as u64),
-                lat: 0.0, lon: 0.0,
-                altitude_m: Some(alt),
-                ..Sample::blank()
-            }
-        }).collect();
+        let samples: Vec<Sample> = (0..21)
+            .map(|i| {
+                let alt = if i <= 10 {
+                    100.0 + (i as f32) * 10.0
+                } else {
+                    200.0 - ((i - 10) as f32) * 10.0
+                };
+                Sample {
+                    t: Duration::from_secs(i as u64),
+                    lat: 0.0,
+                    lon: 0.0,
+                    altitude_m: Some(alt),
+                    ..Sample::blank()
+                }
+            })
+            .collect();
         let mut a = Activity::from_samples(Utc::now(), samples);
         a.fill_elev_gain(3.0);
         let total = a.samples.last().unwrap().elev_gain_cum_m.unwrap();

@@ -7,8 +7,7 @@ pub(crate) fn haversine_m(lat1_deg: f64, lon1_deg: f64, lat2_deg: f64, lon2_deg:
     let phi2 = lat2_deg.to_radians();
     let dphi = (lat2_deg - lat1_deg).to_radians();
     let dlam = (lon2_deg - lon1_deg).to_radians();
-    let a = (dphi / 2.0).sin().powi(2)
-        + phi1.cos() * phi2.cos() * (dlam / 2.0).sin().powi(2);
+    let a = (dphi / 2.0).sin().powi(2) + phi1.cos() * phi2.cos() * (dlam / 2.0).sin().powi(2);
     let c = 2.0 * a.sqrt().asin();
     EARTH_RADIUS_M * c
 }

@@ -212,7 +212,13 @@ mod tests {
         assert!(a.samples.iter().any(|s| s.altitude_m.is_some()));
         assert_eq!(a.samples[0].t, std::time::Duration::ZERO);
         // At least a few samples should have HR and power from the extensions
-        assert!(a.samples.iter().filter(|s| s.heart_rate_bpm.is_some()).count() >= 6);
+        assert!(
+            a.samples
+                .iter()
+                .filter(|s| s.heart_rate_bpm.is_some())
+                .count()
+                >= 6
+        );
         assert!(a.samples.iter().filter(|s| s.power_w.is_some()).count() >= 6);
     }
 }

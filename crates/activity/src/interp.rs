@@ -20,7 +20,11 @@ pub(crate) fn lerp_f64(a: f64, b: f64, u: f64) -> f64 {
 
 /// Nearest-neighbor over `Option<u8>` given parameter `u` ∈ [0, 1].
 pub(crate) fn nearest_opt_u8(a: Option<u8>, b: Option<u8>, u: f32) -> Option<u8> {
-    if u < 0.5 { a } else { b }
+    if u < 0.5 {
+        a
+    } else {
+        b
+    }
 }
 
 /// Linear interpolate `Option<u8>` (heart rate) and `Option<u16>` (power) —

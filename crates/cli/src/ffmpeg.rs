@@ -27,26 +27,39 @@ impl FfmpegWriter {
         let mut cmd = Command::new("ffmpeg");
         cmd.args([
             "-y",
-            "-f", "rawvideo",
-            "-pix_fmt", "rgba",
-            "-s", &size,
-            "-framerate", &fps_str,
-            "-i", "-",
-            "-c:v", "prores_ks",
-            "-profile:v", "4444",
-            "-pix_fmt", "yuva444p10le",
-            "-vendor", "apl0",
-            "-qscale:v", &qscale_str,
+            "-f",
+            "rawvideo",
+            "-pix_fmt",
+            "rgba",
+            "-s",
+            &size,
+            "-framerate",
+            &fps_str,
+            "-i",
+            "-",
+            "-c:v",
+            "prores_ks",
+            "-profile:v",
+            "4444",
+            "-pix_fmt",
+            "yuva444p10le",
+            "-vendor",
+            "apl0",
+            "-qscale:v",
+            &qscale_str,
         ]);
         cmd.arg(out_path);
 
         cmd.stdin(Stdio::piped())
-           .stdout(Stdio::null())
-           .stderr(Stdio::piped());
+            .stdout(Stdio::null())
+            .stderr(Stdio::piped());
 
-        let mut child = cmd.spawn()
+        let mut child = cmd
+            .spawn()
             .map_err(|e| anyhow::anyhow!("failed to spawn ffmpeg (is it on PATH?): {}", e))?;
-        let stdin = child.stdin.take()
+        let stdin = child
+            .stdin
+            .take()
             .ok_or_else(|| anyhow::anyhow!("ffmpeg stdin not captured"))?;
 
         Ok(Self {
@@ -71,7 +84,11 @@ impl FfmpegWriter {
             Ok(())
         } else {
             let stderr = String::from_utf8_lossy(&output.stderr);
-            anyhow::bail!("ffmpeg exited with status {:?}\nstderr:\n{}", output.status, stderr)
+            anyhow::bail!(
+                "ffmpeg exited with status {:?}\nstderr:\n{}",
+                output.status,
+                stderr
+            )
         }
     }
 }
@@ -91,9 +108,9 @@ mod tests {
         let mut writer = FfmpegWriter::new(w, h, 10, 11, &out).unwrap();
         let mut frame = vec![0u8; (w * h * 4) as usize];
         for i in 0..frame.len() / 4 {
-            frame[i * 4] = 255;     // R
-            frame[i * 4 + 1] = 0;   // G
-            frame[i * 4 + 2] = 0;   // B
+            frame[i * 4] = 255; // R
+            frame[i * 4 + 1] = 0; // G
+            frame[i * 4 + 2] = 0; // B
             frame[i * 4 + 3] = 255; // A
         }
         for _ in 0..10 {
@@ -106,20 +123,32 @@ mod tests {
 
         let probe = std::process::Command::new("ffprobe")
             .args([
-                "-v", "error",
-                "-select_streams", "v:0",
-                "-show_entries", "stream=width,height,r_frame_rate,nb_read_frames,codec_name,pix_fmt",
+                "-v",
+                "error",
+                "-select_streams",
+                "v:0",
+                "-show_entries",
+                "stream=width,height,r_frame_rate,nb_read_frames,codec_name,pix_fmt",
                 "-count_frames",
-                "-of", "default=noprint_wrappers=1",
+                "-of",
+                "default=noprint_wrappers=1",
             ])
             .arg(&out)
             .output()
             .expect("ffprobe to run");
-        assert!(probe.status.success(), "ffprobe failed: {}", String::from_utf8_lossy(&probe.stderr));
+        assert!(
+            probe.status.success(),
+            "ffprobe failed: {}",
+            String::from_utf8_lossy(&probe.stderr)
+        );
         let out_str = String::from_utf8_lossy(&probe.stdout);
         assert!(out_str.contains("width=64"), "stream info:\n{}", out_str);
         assert!(out_str.contains("height=64"), "stream info:\n{}", out_str);
-        assert!(out_str.contains("codec_name=prores"), "stream info:\n{}", out_str);
+        assert!(
+            out_str.contains("codec_name=prores"),
+            "stream info:\n{}",
+            out_str
+        );
         // ffmpeg's prores_ks maps the 4444 profile's decoded pixel format to
         // either yuva444p10le or yuva444p12le depending on the libavcodec
         // version (7.x reports 12le). The load-bearing property is
@@ -129,6 +158,10 @@ mod tests {
             "expected pix_fmt=yuva444p*, stream info:\n{}",
             out_str
         );
-        assert!(out_str.contains("nb_read_frames=10"), "stream info:\n{}", out_str);
+        assert!(
+            out_str.contains("nb_read_frames=10"),
+            "stream info:\n{}",
+            out_str
+        );
     }
 }

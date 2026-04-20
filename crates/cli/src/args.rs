@@ -3,7 +3,11 @@ use std::path::PathBuf;
 use std::time::Duration;
 
 #[derive(Parser, Debug)]
-#[command(name = "gpx-overlay", version, about = "Render a transparent video overlay from GPX or FIT data")]
+#[command(
+    name = "gpx-overlay",
+    version,
+    about = "Render a transparent video overlay from GPX or FIT data"
+)]
 pub struct Args {
     #[command(subcommand)]
     pub command: Command,
@@ -71,21 +75,39 @@ pub fn parse_time_spec(s: &str) -> Result<Duration, String> {
     let parts: Vec<&str> = s.split(':').collect();
     match parts.len() {
         1 => {
-            let secs: u64 = parts[0].parse().map_err(|e| format!("invalid seconds: {}", e))?;
+            let secs: u64 = parts[0]
+                .parse()
+                .map_err(|e| format!("invalid seconds: {}", e))?;
             Ok(Duration::from_secs(secs))
         }
         2 => {
-            let m: u64 = parts[0].parse().map_err(|e| format!("invalid minutes: {}", e))?;
-            let s: u64 = parts[1].parse().map_err(|e| format!("invalid seconds: {}", e))?;
-            if s >= 60 { return Err(format!("seconds out of range: {}", s)); }
+            let m: u64 = parts[0]
+                .parse()
+                .map_err(|e| format!("invalid minutes: {}", e))?;
+            let s: u64 = parts[1]
+                .parse()
+                .map_err(|e| format!("invalid seconds: {}", e))?;
+            if s >= 60 {
+                return Err(format!("seconds out of range: {}", s));
+            }
             Ok(Duration::from_secs(m * 60 + s))
         }
         3 => {
-            let h: u64 = parts[0].parse().map_err(|e| format!("invalid hours: {}", e))?;
-            let m: u64 = parts[1].parse().map_err(|e| format!("invalid minutes: {}", e))?;
-            let sec: u64 = parts[2].parse().map_err(|e| format!("invalid seconds: {}", e))?;
-            if m >= 60 { return Err(format!("minutes out of range: {}", m)); }
-            if sec >= 60 { return Err(format!("seconds out of range: {}", sec)); }
+            let h: u64 = parts[0]
+                .parse()
+                .map_err(|e| format!("invalid hours: {}", e))?;
+            let m: u64 = parts[1]
+                .parse()
+                .map_err(|e| format!("invalid minutes: {}", e))?;
+            let sec: u64 = parts[2]
+                .parse()
+                .map_err(|e| format!("invalid seconds: {}", e))?;
+            if m >= 60 {
+                return Err(format!("minutes out of range: {}", m));
+            }
+            if sec >= 60 {
+                return Err(format!("seconds out of range: {}", sec));
+            }
             Ok(Duration::from_secs(h * 3600 + m * 60 + sec))
         }
         _ => Err(format!("expected HH:MM:SS, MM:SS, or seconds; got '{}'", s)),
@@ -101,8 +123,12 @@ pub fn parse_size(s: &str) -> Result<(u32, u32), String> {
     if parts.len() != 2 {
         return Err(format!("expected WxH, got '{}'", s));
     }
-    let w: u32 = parts[0].parse().map_err(|e: std::num::ParseIntError| e.to_string())?;
-    let h: u32 = parts[1].parse().map_err(|e: std::num::ParseIntError| e.to_string())?;
+    let w: u32 = parts[0]
+        .parse()
+        .map_err(|e: std::num::ParseIntError| e.to_string())?;
+    let h: u32 = parts[1]
+        .parse()
+        .map_err(|e: std::num::ParseIntError| e.to_string())?;
     if w == 0 || h == 0 {
         return Err("width and height must be positive".into());
     }
@@ -115,7 +141,10 @@ mod tests {
 
     #[test]
     fn time_spec_hms() {
-        assert_eq!(parse_time_spec("01:23:45").unwrap(), Duration::from_secs(5025));
+        assert_eq!(
+            parse_time_spec("01:23:45").unwrap(),
+            Duration::from_secs(5025)
+        );
     }
 
     #[test]

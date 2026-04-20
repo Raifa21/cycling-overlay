@@ -5,8 +5,13 @@ use std::path::PathBuf;
 use std::process::Command as StdCommand;
 
 fn workspace_root() -> PathBuf {
-    std::env::current_dir().unwrap()
-        .parent().unwrap().parent().unwrap().to_path_buf()
+    std::env::current_dir()
+        .unwrap()
+        .parent()
+        .unwrap()
+        .parent()
+        .unwrap()
+        .to_path_buf()
 }
 
 #[test]
@@ -22,11 +27,16 @@ fn render_short_gpx_produces_valid_mov() {
         .unwrap()
         .args([
             "render",
-            "--input", ws.join("examples").join("short.gpx").to_str().unwrap(),
-            "--layout", ws.join("examples").join("layout.json").to_str().unwrap(),
-            "--output", out.to_str().unwrap(),
-            "--from", "0:00",
-            "--to", "0:02",
+            "--input",
+            ws.join("examples").join("short.gpx").to_str().unwrap(),
+            "--layout",
+            ws.join("examples").join("layout.json").to_str().unwrap(),
+            "--output",
+            out.to_str().unwrap(),
+            "--from",
+            "0:00",
+            "--to",
+            "0:02",
         ])
         .assert()
         .success();
@@ -36,18 +46,24 @@ fn render_short_gpx_produces_valid_mov() {
     // ffprobe the result.
     let probe = StdCommand::new("ffprobe")
         .args([
-            "-v", "error",
-            "-select_streams", "v:0",
+            "-v",
+            "error",
+            "-select_streams",
+            "v:0",
             "-show_entries",
             "stream=width,height,r_frame_rate,nb_read_frames,codec_name,pix_fmt",
             "-count_frames",
-            "-of", "default=noprint_wrappers=1",
+            "-of",
+            "default=noprint_wrappers=1",
         ])
         .arg(&out)
         .output()
         .expect("ffprobe to run");
-    assert!(probe.status.success(), "ffprobe failed: {}",
-            String::from_utf8_lossy(&probe.stderr));
+    assert!(
+        probe.status.success(),
+        "ffprobe failed: {}",
+        String::from_utf8_lossy(&probe.stderr)
+    );
     let s = String::from_utf8_lossy(&probe.stdout);
     assert!(s.contains("codec_name=prores"), "{}", s);
     assert!(s.contains("width=1920"), "{}", s);

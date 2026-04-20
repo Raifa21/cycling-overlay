@@ -86,7 +86,11 @@ mod tests {
     use crate::*;
 
     fn minimal_canvas() -> Canvas {
-        Canvas { width: 100, height: 100, fps: 30 }
+        Canvas {
+            width: 100,
+            height: 100,
+            fps: 30,
+        }
     }
     fn minimal_units() -> Units {
         Units {
@@ -134,7 +138,10 @@ mod tests {
     fn unknown_version_is_error() {
         let l = make_layout(vec![], 2);
         let known = known_metrics();
-        let catalog = MetricCatalog { known: &known, present: &known };
+        let catalog = MetricCatalog {
+            known: &known,
+            present: &known,
+        };
         assert!(matches!(
             l.validate(&catalog),
             Err(ValidationError::UnsupportedVersion(2))
@@ -146,14 +153,22 @@ mod tests {
         let w = Widget::Readout {
             id: "r1".into(),
             metric: "speed".into(),
-            rect: Rect { x: 90, y: 0, w: 30, h: 10 }, // extends past x=100
+            rect: Rect {
+                x: 90,
+                y: 0,
+                w: 30,
+                h: 10,
+            }, // extends past x=100
             label: "SPEED".into(),
             decimals: 1,
             font_size: 24.0,
         };
         let l = make_layout(vec![w], 1);
         let known = known_metrics();
-        let catalog = MetricCatalog { known: &known, present: &known };
+        let catalog = MetricCatalog {
+            known: &known,
+            present: &known,
+        };
         assert!(matches!(
             l.validate(&catalog),
             Err(ValidationError::RectOverflow { .. })
@@ -165,14 +180,22 @@ mod tests {
         let w = Widget::Readout {
             id: "r1".into(),
             metric: "blood_pressure".into(),
-            rect: Rect { x: 0, y: 0, w: 10, h: 10 },
+            rect: Rect {
+                x: 0,
+                y: 0,
+                w: 10,
+                h: 10,
+            },
             label: "BP".into(),
             decimals: 0,
             font_size: 24.0,
         };
         let l = make_layout(vec![w], 1);
         let known = known_metrics();
-        let catalog = MetricCatalog { known: &known, present: &[] };
+        let catalog = MetricCatalog {
+            known: &known,
+            present: &[],
+        };
         assert!(matches!(
             l.validate(&catalog),
             Err(ValidationError::UnknownMetric { .. })
@@ -184,7 +207,12 @@ mod tests {
         let w = Widget::Readout {
             id: "r1".into(),
             metric: "power".into(),
-            rect: Rect { x: 0, y: 0, w: 10, h: 10 },
+            rect: Rect {
+                x: 0,
+                y: 0,
+                w: 10,
+                h: 10,
+            },
             label: "POWER".into(),
             decimals: 0,
             font_size: 24.0,
@@ -192,7 +220,10 @@ mod tests {
         let l = make_layout(vec![w], 1);
         // Catalog knows "power" but says it's absent on this activity.
         let known = known_metrics();
-        let catalog = MetricCatalog { known: &known, present: &["speed"] };
+        let catalog = MetricCatalog {
+            known: &known,
+            present: &["speed"],
+        };
         let warnings = l.validate(&catalog).unwrap();
         assert_eq!(warnings.len(), 1);
         assert!(matches!(&warnings[0], Warning::MetricAbsent { metric, .. } if metric == "power"));
@@ -202,13 +233,21 @@ mod tests {
     fn valid_layout_no_warnings() {
         let w = Widget::Course {
             id: "map".into(),
-            rect: Rect { x: 0, y: 0, w: 50, h: 50 },
+            rect: Rect {
+                x: 0,
+                y: 0,
+                w: 50,
+                h: 50,
+            },
             line_width: 2.0,
             dot_radius: 4.0,
         };
         let l = make_layout(vec![w], 1);
         let known = known_metrics();
-        let catalog = MetricCatalog { known: &known, present: &known };
+        let catalog = MetricCatalog {
+            known: &known,
+            present: &known,
+        };
         let warnings = l.validate(&catalog).unwrap();
         assert!(warnings.is_empty());
     }
