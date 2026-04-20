@@ -13,6 +13,7 @@ pub struct Sample {
     pub power_w: Option<u16>,
     pub distance_m: Option<f64>,
     pub elev_gain_cum_m: Option<f32>,
+    pub gradient_pct: Option<f32>,  // percent slope (vertical/horizontal × 100)
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -155,6 +156,85 @@ impl Activity {
         }
     }
 
+    /// Compute gradient (percent slope) at each sample from altitude over distance,
+    /// using a rolling window of approximately `window_m` meters of distance.
+    ///
+    /// For each sample `i`, find indices `j < i < k` such that
+    /// `distance[k] - distance[j]` is as close to `window_m` as possible. Then
+    /// `gradient_pct = (altitude[k] - altitude[j]) / (distance[k] - distance[j]) * 100`.
+    ///
+    /// Requires both `altitude_m` and `distance_m` to be populated on neighboring
+    /// samples. Endpoints use whatever window is available. Samples missing
+    /// altitude or distance get `None`.
+    pub fn fill_gradient(&mut self, window_m: f32) {
+        let n = self.samples.len();
+        if n < 2 {
+            return;
+        }
+        let half = (window_m / 2.0) as f64;
+
+        // Precompute distances and altitudes for fast access.
+        let d: Vec<Option<f64>> = self.samples.iter().map(|s| s.distance_m).collect();
+        let a: Vec<Option<f32>> = self.samples.iter().map(|s| s.altitude_m).collect();
+
+        for i in 0..n {
+            if a[i].is_none() || d[i].is_none() {
+                self.samples[i].gradient_pct = None;
+                continue;
+            }
+            let d_i = d[i].unwrap();
+
+            // Walk outward from i to find j (earliest) and k (latest) within half window.
+            let mut j = i;
+            while j > 0 {
+                if let Some(dj) = d[j - 1] {
+                    if d_i - dj > half { break; }
+                    j -= 1;
+                } else {
+                    break;
+                }
+            }
+            let mut k = i;
+            while k + 1 < n {
+                if let Some(dk) = d[k + 1] {
+                    if dk - d_i > half { break; }
+                    k += 1;
+                } else {
+                    break;
+                }
+            }
+
+            if j == k {
+                // No span available (single point); gradient is undefined.
+                self.samples[i].gradient_pct = None;
+                continue;
+            }
+
+            let (dj, dk) = match (d[j], d[k]) {
+                (Some(dj), Some(dk)) => (dj, dk),
+                _ => {
+                    self.samples[i].gradient_pct = None;
+                    continue;
+                }
+            };
+            let (aj, ak) = match (a[j], a[k]) {
+                (Some(aj), Some(ak)) => (aj, ak),
+                _ => {
+                    self.samples[i].gradient_pct = None;
+                    continue;
+                }
+            };
+
+            let dist = dk - dj;
+            if dist <= 0.0 {
+                self.samples[i].gradient_pct = None;
+                continue;
+            }
+            let slope = (ak - aj) as f64 / dist; // dimensionless
+            self.samples[i].gradient_pct = Some((slope * 100.0) as f32);
+        }
+    }
+
     /// Like smooth_speed but for `altitude_m`.
     pub fn smooth_altitude(&mut self, window: Duration) {
         let mut ts = Vec::with_capacity(self.samples.len());
@@ -185,6 +265,7 @@ impl Sample {
             heart_rate_bpm: None, cadence_rpm: None,
             power_w: None, distance_m: None,
             elev_gain_cum_m: None,
+            gradient_pct: None,
         }
     }
 }
@@ -202,7 +283,7 @@ mod tests {
                      altitude_m: Some(100.0), speed_mps: None,
                      heart_rate_bpm: None, cadence_rpm: None,
                      power_w: None, distance_m: None,
-                     elev_gain_cum_m: None },
+                     elev_gain_cum_m: None, gradient_pct: None },
         ];
         let a = Activity::from_samples(Utc.timestamp_opt(0, 0).unwrap(), samples);
         assert_eq!(a.samples.len(), 1);
@@ -395,6 +476,54 @@ mod tests {
         // inflate due to noise. Allow generous tolerance because hysteresis on
         // linear + ±1m noise produces ~50m ± hysteresis.
         assert!(total < 60.0 && total > 40.0, "got {}", total);
+    }
+
+    #[test]
+    fn gradient_constant_10_percent_climb() {
+        // altitude rises 1.0 m per sample, distance increases 10.0 m per sample,
+        // so gradient should be 10.0%. 30 samples to get plenty of interior.
+        let samples: Vec<Sample> = (0..30).map(|i| Sample {
+            t: Duration::from_secs(i as u64),
+            lat: 0.0, lon: 0.0,
+            altitude_m: Some((i as f32) * 1.0),
+            distance_m: Some((i as f64) * 10.0),
+            ..Sample::blank()
+        }).collect();
+        let mut a = Activity::from_samples(Utc::now(), samples);
+        a.fill_gradient(50.0);
+        // Middle should be within a fraction of 10%.
+        let mid = a.samples[15].gradient_pct.unwrap();
+        assert!((mid - 10.0).abs() < 0.5, "got {}", mid);
+    }
+
+    #[test]
+    fn gradient_zero_on_flat() {
+        let samples: Vec<Sample> = (0..30).map(|i| Sample {
+            t: Duration::from_secs(i as u64),
+            lat: 0.0, lon: 0.0,
+            altitude_m: Some(100.0),
+            distance_m: Some((i as f64) * 10.0),
+            ..Sample::blank()
+        }).collect();
+        let mut a = Activity::from_samples(Utc::now(), samples);
+        a.fill_gradient(50.0);
+        for s in &a.samples[5..25] {
+            assert!(s.gradient_pct.unwrap().abs() < 0.01);
+        }
+    }
+
+    #[test]
+    fn gradient_none_when_altitude_missing() {
+        let samples: Vec<Sample> = (0..10).map(|i| Sample {
+            t: Duration::from_secs(i as u64),
+            lat: 0.0, lon: 0.0,
+            altitude_m: None,
+            distance_m: Some((i as f64) * 10.0),
+            ..Sample::blank()
+        }).collect();
+        let mut a = Activity::from_samples(Utc::now(), samples);
+        a.fill_gradient(50.0);
+        assert!(a.samples.iter().all(|s| s.gradient_pct.is_none()));
     }
 
     #[test]

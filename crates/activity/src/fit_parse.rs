@@ -133,6 +133,7 @@ pub fn load_fit(path: &Path) -> Result<Activity, FitError> {
             power_w,
             distance_m,
             elev_gain_cum_m: None,
+            gradient_pct: None,
         });
     }
 
