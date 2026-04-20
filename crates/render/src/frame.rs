@@ -22,6 +22,7 @@ pub fn render_frame(
     t: Duration,
     text_ctx: &mut TextCtx,
     pixmap: &mut Pixmap,
+    background: Color,
 ) -> anyhow::Result<()> {
     if pixmap.width() != layout.canvas.width || pixmap.height() != layout.canvas.height {
         anyhow::bail!(
@@ -32,7 +33,7 @@ pub fn render_frame(
             layout.canvas.height,
         );
     }
-    pixmap.fill(Color::TRANSPARENT);
+    pixmap.fill(background);
     let rider = layout.rider.as_ref();
 
     for widget in &layout.widgets {
@@ -179,7 +180,15 @@ mod tests {
         let mut pix = Pixmap::new(100, 100).unwrap();
         // Pre-fill with red so a successful clear is observable.
         pix.fill(tiny_skia::Color::from_rgba8(255, 0, 0, 255));
-        render_frame(&layout, &activity, Duration::ZERO, &mut ctx, &mut pix).unwrap();
+        render_frame(
+            &layout,
+            &activity,
+            Duration::ZERO,
+            &mut ctx,
+            &mut pix,
+            Color::TRANSPARENT,
+        )
+        .unwrap();
         // Every pixel must be fully transparent after render.
         assert!(
             pix.data().chunks_exact(4).all(|p| p[3] == 0),
@@ -193,7 +202,14 @@ mod tests {
         let activity = one_sample_activity();
         let mut ctx = TextCtx::new();
         let mut pix = Pixmap::new(100, 100).unwrap();
-        let r = render_frame(&layout, &activity, Duration::ZERO, &mut ctx, &mut pix);
+        let r = render_frame(
+            &layout,
+            &activity,
+            Duration::ZERO,
+            &mut ctx,
+            &mut pix,
+            Color::TRANSPARENT,
+        );
         assert!(r.is_err());
     }
 }

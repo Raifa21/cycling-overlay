@@ -8,11 +8,30 @@ use std::fs;
 use std::sync::mpsc::sync_channel;
 use std::thread;
 use std::time::Duration;
-use tiny_skia::Pixmap;
+use tiny_skia::{Color, Pixmap};
 
 use crate::args::RenderArgs;
-use crate::ffmpeg::FfmpegWriter;
+use crate::ffmpeg::{EncodeOpts, FfmpegWriter};
 use crate::pipeline::{FrameScheduler, ReorderBuffer};
+
+/// Parse a hex color `#rrggbb` into an opaque `tiny_skia::Color`. Used for
+/// chromakey fills. Alpha shorthand (`#rrggbbaa`) is not accepted here — the
+/// chromakey must be opaque.
+fn parse_chromakey(hex: &str) -> Result<Color> {
+    let s = hex
+        .strip_prefix('#')
+        .ok_or_else(|| anyhow!("chromakey must start with '#': got '{}'", hex))?;
+    if s.len() != 6 {
+        return Err(anyhow!(
+            "chromakey must be #rrggbb (6 hex digits): got '{}'",
+            hex
+        ));
+    }
+    let r = u8::from_str_radix(&s[0..2], 16).map_err(|_| anyhow!("bad hex in chromakey"))?;
+    let g = u8::from_str_radix(&s[2..4], 16).map_err(|_| anyhow!("bad hex in chromakey"))?;
+    let b = u8::from_str_radix(&s[4..6], 16).map_err(|_| anyhow!("bad hex in chromakey"))?;
+    Ok(Color::from_rgba8(r, g, b, 255))
+}
 
 /// Everything a render path needs once parsing + validation have succeeded.
 pub struct Loaded {
@@ -175,13 +194,25 @@ pub fn render(args: &RenderArgs) -> Result<()> {
     const BUFFER_CAP: usize = 64;
     let (tx, rx) = sync_channel::<(u64, Vec<u8>)>(BUFFER_CAP);
 
+    // Derive the background color for render_frame. ProRes keeps alpha;
+    // non-ProRes codecs drop alpha and expect a solid chromakey fill.
+    let background = if args.codec.needs_chromakey() {
+        parse_chromakey(&args.chromakey)?
+    } else {
+        Color::TRANSPARENT
+    };
+
     // Spawn flusher thread. It owns the FfmpegWriter and ReorderBuffer.
     let out_path = args.output.clone();
     let (w, h, fps) = (loaded.canvas_width, loaded.canvas_height, loaded.fps);
-    let qscale = args.qscale;
+    let encode_opts = EncodeOpts {
+        codec: args.codec,
+        qscale: args.qscale,
+        crf: args.crf,
+    };
     let pb_flush = pb.clone();
     let flusher = thread::spawn(move || -> anyhow::Result<()> {
-        let mut writer = FfmpegWriter::new(w, h, fps, qscale, &out_path)?;
+        let mut writer = FfmpegWriter::new(w, h, fps, encode_opts, &out_path)?;
         let mut buf = ReorderBuffer::new(BUFFER_CAP);
         while let Ok((idx, bytes)) = rx.recv() {
             buf.push(idx, bytes);
@@ -231,7 +262,14 @@ pub fn render(args: &RenderArgs) -> Result<()> {
                     });
                 }
                 let scratch = borrow.as_mut().unwrap();
-                render::render_frame(layout, activity, t, &mut scratch.text, &mut scratch.pixmap)?;
+                render::render_frame(
+                    layout,
+                    activity,
+                    t,
+                    &mut scratch.text,
+                    &mut scratch.pixmap,
+                    background,
+                )?;
                 let bytes = scratch.pixmap.data().to_vec();
                 sender
                     .send((idx, bytes))

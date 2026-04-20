@@ -1,3 +1,4 @@
+use crate::args::Codec;
 use std::io::Write;
 use std::path::Path;
 use std::process::{Child, ChildStdin, Command, Stdio};
@@ -8,23 +9,35 @@ pub struct FfmpegWriter {
     frame_bytes: usize,
 }
 
+/// Per-call encoding options. `qscale` applies to ProRes; `crf` applies to
+/// H.264/HEVC (whether libx264 or NVENC). Unused fields per codec are
+/// ignored.
+#[derive(Debug, Clone, Copy)]
+pub struct EncodeOpts {
+    pub codec: Codec,
+    pub qscale: u32,
+    pub crf: u32,
+}
+
 impl FfmpegWriter {
-    /// Spawn an ffmpeg subprocess writing ProRes 4444 to `out_path`.
+    /// Spawn an ffmpeg subprocess writing the chosen codec to `out_path`.
     ///
     /// The caller is responsible for writing exactly `width * height * 4`
-    /// bytes of RGBA per frame.
+    /// bytes of RGBA per frame. For non-ProRes codecs the alpha channel is
+    /// discarded by the pix_fmt conversion; callers should have already
+    /// filled the pixmap with the chromakey color.
     pub fn new(
         width: u32,
         height: u32,
         fps: u32,
-        qscale: u32,
+        opts: EncodeOpts,
         out_path: &Path,
     ) -> anyhow::Result<Self> {
         let size = format!("{}x{}", width, height);
         let fps_str = format!("{}", fps);
-        let qscale_str = format!("{}", qscale);
 
         let mut cmd = Command::new("ffmpeg");
+        // Common input args: raw RGBA stream from our stdin.
         cmd.args([
             "-y",
             "-f",
@@ -37,17 +50,55 @@ impl FfmpegWriter {
             &fps_str,
             "-i",
             "-",
-            "-c:v",
-            "prores_ks",
-            "-profile:v",
-            "4444",
-            "-pix_fmt",
-            "yuva444p10le",
-            "-vendor",
-            "apl0",
-            "-qscale:v",
-            &qscale_str,
         ]);
+        // Codec-specific output args.
+        let qscale_str = opts.qscale.to_string();
+        let crf_str = opts.crf.to_string();
+        match opts.codec {
+            Codec::Prores4444 => {
+                cmd.args([
+                    "-c:v",
+                    "prores_ks",
+                    "-profile:v",
+                    "4444",
+                    "-pix_fmt",
+                    "yuva444p10le",
+                    "-vendor",
+                    "apl0",
+                    "-qscale:v",
+                    &qscale_str,
+                ]);
+            }
+            Codec::H264 => {
+                cmd.args([
+                    "-c:v", "libx264", "-preset", "fast", "-crf", &crf_str, "-pix_fmt", "yuv420p",
+                ]);
+            }
+            Codec::H264Nvenc => {
+                cmd.args([
+                    "-c:v",
+                    "h264_nvenc",
+                    "-preset",
+                    "p4",
+                    "-cq",
+                    &crf_str,
+                    "-pix_fmt",
+                    "yuv420p",
+                ]);
+            }
+            Codec::HevcNvenc => {
+                cmd.args([
+                    "-c:v",
+                    "hevc_nvenc",
+                    "-preset",
+                    "p4",
+                    "-cq",
+                    &crf_str,
+                    "-pix_fmt",
+                    "yuv420p",
+                ]);
+            }
+        }
         cmd.arg(out_path);
 
         cmd.stdin(Stdio::piped())
@@ -105,7 +156,12 @@ mod tests {
         let dir = tempdir().unwrap();
         let out = dir.path().join("out.mov");
         let (w, h) = (64u32, 64u32);
-        let mut writer = FfmpegWriter::new(w, h, 10, 11, &out).unwrap();
+        let opts = EncodeOpts {
+            codec: Codec::Prores4444,
+            qscale: 11,
+            crf: 20,
+        };
+        let mut writer = FfmpegWriter::new(w, h, 10, opts, &out).unwrap();
         let mut frame = vec![0u8; (w * h * 4) as usize];
         for i in 0..frame.len() / 4 {
             frame[i * 4] = 255; // R

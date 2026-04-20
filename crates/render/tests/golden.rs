@@ -80,7 +80,15 @@ fn readout_speed_matches_golden() {
 
     let mut ctx = TextCtx::new();
     let mut pix = Pixmap::new(400, 200).unwrap();
-    render_frame(&layout, &activity, Duration::ZERO, &mut ctx, &mut pix).unwrap();
+    render_frame(
+        &layout,
+        &activity,
+        Duration::ZERO,
+        &mut ctx,
+        &mut pix,
+        tiny_skia::Color::TRANSPARENT,
+    )
+    .unwrap();
 
     assert_golden(&pix, "readout_speed.png");
 }
@@ -135,7 +143,15 @@ fn course_widget_matches_golden() {
 
     let mut ctx = TextCtx::new();
     let mut pix = Pixmap::new(300, 300).unwrap();
-    render_frame(&layout, &activity, t, &mut ctx, &mut pix).unwrap();
+    render_frame(
+        &layout,
+        &activity,
+        t,
+        &mut ctx,
+        &mut pix,
+        tiny_skia::Color::TRANSPARENT,
+    )
+    .unwrap();
 
     assert_golden(&pix, "course_mid.png");
 }
@@ -208,6 +224,7 @@ fn elevation_profile_matches_golden() {
         Duration::from_secs(10),
         &mut ctx,
         &mut pix,
+        tiny_skia::Color::TRANSPARENT,
     )
     .unwrap();
 

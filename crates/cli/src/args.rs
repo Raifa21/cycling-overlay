@@ -1,6 +1,32 @@
-use clap::{Parser, Subcommand};
+use clap::{Parser, Subcommand, ValueEnum};
 use std::path::PathBuf;
 use std::time::Duration;
+
+/// Output codec.
+///
+/// `Prores4444` preserves the alpha channel (drop onto NLE timeline directly).
+/// The other variants drop alpha and expect the user to chromakey the fill
+/// color out of the overlay in their editor — much smaller files, much faster
+/// encoding, especially with NVENC.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, ValueEnum)]
+pub enum Codec {
+    /// ProRes 4444 with alpha, .mov. Largest files, moderate encode speed.
+    Prores4444,
+    /// H.264 + chromakey, CPU-encoded via libx264. Small files, fast.
+    H264,
+    /// H.264 + chromakey, NVENC. Small files, very fast if you have an
+    /// NVIDIA GPU.
+    H264Nvenc,
+    /// HEVC + chromakey, NVENC. Smallest files, very fast.
+    HevcNvenc,
+}
+
+impl Codec {
+    /// True for codecs that carry no alpha; render needs a solid fill.
+    pub fn needs_chromakey(self) -> bool {
+        !matches!(self, Codec::Prores4444)
+    }
+}
 
 #[derive(Parser, Debug)]
 #[command(
@@ -53,9 +79,24 @@ pub struct RenderArgs {
     #[arg(long)]
     pub threads: Option<usize>,
 
-    /// ProRes qscale (0 = lossless, 13 = aggressive). Default 11.
+    /// ProRes qscale (0 = lossless, 13 = aggressive). Default 11. Only
+    /// applies to --codec prores4444.
     #[arg(long, default_value_t = 11)]
     pub qscale: u32,
+
+    /// H.264/HEVC quality — CRF for libx264, CQ for NVENC. Lower = higher
+    /// quality. Default 20. Only applies when codec is not prores4444.
+    #[arg(long, default_value_t = 20)]
+    pub crf: u32,
+
+    /// Output codec. Non-ProRes codecs drop alpha and use a chromakey fill.
+    #[arg(long, value_enum, default_value_t = Codec::Prores4444)]
+    pub codec: Codec,
+
+    /// Chromakey fill color (hex #rrggbb) used for non-alpha codecs.
+    /// Defaults to magenta (#ff00ff), which almost never appears in real UI.
+    #[arg(long, default_value = "#ff00ff")]
+    pub chromakey: String,
 
     /// Parse + validate only; don't render.
     #[arg(long)]
