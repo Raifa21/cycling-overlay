@@ -18,6 +18,7 @@ pub fn render_readout(
     label: &str,
     decimals: u32,
     font_size: f32,
+    label_font_size: Option<f32>,
     activity: &Activity,
     t: Duration,
 ) {
@@ -32,7 +33,7 @@ pub fn render_readout(
     let accent = super::parse_hex(&theme.accent).unwrap_or(fg);
 
     // Layout: label takes ~1/3 of height (top), value takes ~2/3 (below).
-    let label_size = font_size * 0.35;
+    let label_size = label_font_size.unwrap_or(font_size * 0.35);
     let label_x = rect.x as f32;
     let label_y = rect.y as f32;
     let value_y = rect.y as f32 + label_size * 1.4;

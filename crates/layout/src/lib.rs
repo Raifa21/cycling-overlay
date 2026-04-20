@@ -97,6 +97,9 @@ pub enum Widget {
         label: String,
         decimals: u32,
         font_size: f32,
+        /// Label font size. When omitted, defaults to `font_size * 0.35`.
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        label_font_size: Option<f32>,
     },
     Course {
         id: String,

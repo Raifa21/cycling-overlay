@@ -163,6 +163,7 @@ mod tests {
             label: "SPEED".into(),
             decimals: 1,
             font_size: 24.0,
+            label_font_size: None,
         };
         let l = make_layout(vec![w], 1);
         let known = known_metrics();
@@ -190,6 +191,7 @@ mod tests {
             label: "BP".into(),
             decimals: 0,
             font_size: 24.0,
+            label_font_size: None,
         };
         let l = make_layout(vec![w], 1);
         let known = known_metrics();
@@ -217,6 +219,7 @@ mod tests {
             label: "POWER".into(),
             decimals: 0,
             font_size: 24.0,
+            label_font_size: None,
         };
         let l = make_layout(vec![w], 1);
         // Catalog knows "power" but says it's absent on this activity.

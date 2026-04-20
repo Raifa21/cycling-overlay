@@ -44,6 +44,7 @@ pub fn render_frame(
                 label,
                 decimals,
                 font_size,
+                label_font_size,
             } => {
                 crate::widgets::readout::render_readout(
                     pixmap,
@@ -56,6 +57,7 @@ pub fn render_frame(
                     label,
                     *decimals,
                     *font_size,
+                    *label_font_size,
                     activity,
                     t,
                 );
