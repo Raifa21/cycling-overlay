@@ -49,6 +49,47 @@ impl Activity {
             }
         }
     }
+
+    /// Fill `speed_mps` on samples where it is missing, by finite-differencing
+    /// `distance_m` against `t`.
+    ///
+    /// - Requires `distance_m` to be populated — call `fill_derived_distance`
+    ///   first when loading GPS-only data.
+    /// - No-op for samples that already have a `speed_mps` value; per-sample
+    ///   decision, not all-or-nothing.
+    /// - Interior samples use a central difference: `(d[i+1] - d[i-1]) / (t[i+1] - t[i-1])`.
+    /// - First and last samples use a one-sided (forward/backward) difference.
+    /// - Single-sample activities leave speed unset.
+    pub fn fill_derived_speed(&mut self) {
+        let n = self.samples.len();
+        if n < 2 {
+            return;
+        }
+        for i in 0..n {
+            if self.samples[i].speed_mps.is_some() {
+                continue;
+            }
+            let (j_lo, j_hi) = if i == 0 {
+                (0, 1)
+            } else if i == n - 1 {
+                (n - 2, n - 1)
+            } else {
+                (i - 1, i + 1)
+            };
+            let (Some(d_lo), Some(d_hi)) = (
+                self.samples[j_lo].distance_m,
+                self.samples[j_hi].distance_m,
+            ) else {
+                continue; // can't derive without both distances
+            };
+            let dt = self.samples[j_hi].t.as_secs_f64() - self.samples[j_lo].t.as_secs_f64();
+            if dt <= 0.0 {
+                continue;
+            }
+            let v = ((d_hi - d_lo) / dt) as f32;
+            self.samples[i].speed_mps = Some(v);
+        }
+    }
 }
 
 #[cfg(test)]
@@ -116,5 +157,45 @@ mod tests {
         a.fill_derived_distance();
         assert_eq!(a.samples[0].distance_m, Some(5.0));
         assert_eq!(a.samples[1].distance_m, Some(20.0));
+    }
+
+    #[test]
+    fn fill_speed_from_constant_distance_rate() {
+        // 11 samples at 1 Hz, distance grows 10 m/s (0, 10, 20, ..., 100).
+        let samples: Vec<Sample> = (0..11)
+            .map(|i| Sample {
+                t: Duration::from_secs(i as u64),
+                lat: 0.0, lon: 0.0,
+                distance_m: Some(i as f64 * 10.0),
+                ..Sample::blank()
+            })
+            .collect();
+        let mut a = Activity::from_samples(Utc::now(), samples);
+        a.fill_derived_speed();
+        // Middle samples should have speed very close to 10 m/s.
+        for s in &a.samples[1..a.samples.len() - 1] {
+            let v = s.speed_mps.unwrap();
+            assert!((v - 10.0).abs() < 0.01, "got {}", v);
+        }
+    }
+
+    #[test]
+    fn fill_speed_noop_when_present() {
+        let samples = vec![
+            Sample {
+                t: Duration::ZERO, lat: 0.0, lon: 0.0,
+                distance_m: Some(0.0), speed_mps: Some(5.0),
+                ..Sample::blank()
+            },
+            Sample {
+                t: Duration::from_secs(1), lat: 0.0, lon: 0.0,
+                distance_m: Some(10.0), speed_mps: Some(5.0),
+                ..Sample::blank()
+            },
+        ];
+        let mut a = Activity::from_samples(Utc::now(), samples);
+        a.fill_derived_speed();
+        assert_eq!(a.samples[0].speed_mps, Some(5.0));
+        assert_eq!(a.samples[1].speed_mps, Some(5.0));
     }
 }
