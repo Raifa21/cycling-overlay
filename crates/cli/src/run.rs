@@ -190,8 +190,8 @@ pub fn render(args: &RenderArgs) -> Result<()> {
     );
 
     // Bounded channel; capacity equals reorder-buffer cap so back-pressure
-    // aligns with the buffer.
-    const BUFFER_CAP: usize = 64;
+    // aligns with the buffer. 128 × 8.3 MB ≈ 1 GB peak at 1080p RGBA.
+    const BUFFER_CAP: usize = 128;
     let (tx, rx) = sync_channel::<(u64, Vec<u8>)>(BUFFER_CAP);
 
     // Derive the background color for render_frame. ProRes keeps alpha;
