@@ -1,0 +1,11 @@
+[package]
+name = "activity"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+serde.workspace = true
+chrono.workspace = true
+thiserror.workspace = true
+gpx = "0.10"
+fitparser = "0.9"
