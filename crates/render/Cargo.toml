@@ -12,3 +12,4 @@ anyhow.workspace = true
 
 [dev-dependencies]
 image = { version = "0.25", default-features = false, features = ["png"] }
+chrono.workspace = true
