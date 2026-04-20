@@ -48,6 +48,33 @@ impl TextCtx {
         }
     }
 
+    /// Measure the rendered pixel width of `text` at `font_size`, shaped with
+    /// the same font and features as `draw`.
+    ///
+    /// Intended for right-aligning values whose character widths differ
+    /// between frames (e.g., "9.2" vs "10.5") so the unit glyph to the right
+    /// of the number doesn't jitter.
+    pub fn measure_width(&mut self, text: &str, font_size: f32) -> f32 {
+        let metrics = Metrics::new(font_size, font_size * 1.2);
+        let mut buffer = Buffer::new(&mut self.font_system, metrics);
+        {
+            let mut bw = buffer.borrow_with(&mut self.font_system);
+            // Very wide box so shaping never wraps; we just want the natural
+            // line width back.
+            bw.set_size(Some(f32::INFINITY), Some(f32::INFINITY));
+            bw.set_text(
+                text,
+                Attrs::new().family(Family::Name("Inter")),
+                Shaping::Advanced,
+            );
+            bw.shape_until_scroll(true);
+        }
+        buffer
+            .layout_runs()
+            .map(|run| run.line_w)
+            .fold(0.0_f32, f32::max)
+    }
+
     /// Draw `text` onto `pixmap` with its layout box anchored at `(x, y)`
     /// (top-left), at `font_size` pixels, composited in `color`.
     ///

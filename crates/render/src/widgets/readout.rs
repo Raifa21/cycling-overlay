@@ -35,18 +35,35 @@ pub fn render_readout(
     let label_size = font_size * 0.35;
     let label_x = rect.x as f32;
     let label_y = rect.y as f32;
-    let value_x = rect.x as f32;
     let value_y = rect.y as f32 + label_size * 1.4;
 
     text_ctx.draw(pixmap, label, label_x, label_y, label_size, accent);
 
-    // Value + unit in one string: "42.5 km/h"
-    let value_full = if unit_str.is_empty() {
-        value_str
+    // Right-align the value + unit to the rect's right edge so the unit
+    // stays anchored in place when the number's character count or glyph
+    // widths change ("4.2 W/kg" → "10.1 W/kg" no longer drags the unit
+    // around). The number grows leftward from the unit.
+    let right_edge = rect.x as f32 + rect.w as f32;
+    let gap = font_size * 0.15;
+
+    if unit_str.is_empty() {
+        let num_w = text_ctx.measure_width(&value_str, font_size);
+        text_ctx.draw(
+            pixmap,
+            &value_str,
+            right_edge - num_w,
+            value_y,
+            font_size,
+            fg,
+        );
     } else {
-        format!("{} {}", value_str, unit_str)
-    };
-    text_ctx.draw(pixmap, &value_full, value_x, value_y, font_size, fg);
+        let unit_w = text_ctx.measure_width(unit_str, font_size);
+        let num_w = text_ctx.measure_width(&value_str, font_size);
+        let unit_x = right_edge - unit_w;
+        let num_x = unit_x - gap - num_w;
+        text_ctx.draw(pixmap, &value_str, num_x, value_y, font_size, fg);
+        text_ctx.draw(pixmap, unit_str, unit_x, value_y, font_size, fg);
+    }
 }
 
 fn format_metric(
