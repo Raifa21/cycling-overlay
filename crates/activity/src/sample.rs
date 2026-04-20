@@ -198,4 +198,49 @@ mod tests {
         assert_eq!(a.samples[0].speed_mps, Some(5.0));
         assert_eq!(a.samples[1].speed_mps, Some(5.0));
     }
+
+    #[test]
+    fn fill_speed_endpoints_use_one_sided_difference() {
+        // Constant 10 m/s: endpoints should use forward/backward difference and
+        // still land on ~10.0.
+        let samples: Vec<Sample> = (0..11)
+            .map(|i| Sample {
+                t: Duration::from_secs(i as u64),
+                lat: 0.0, lon: 0.0,
+                distance_m: Some(i as f64 * 10.0),
+                ..Sample::blank()
+            })
+            .collect();
+        let mut a = Activity::from_samples(Utc::now(), samples);
+        a.fill_derived_speed();
+        assert!((a.samples[0].speed_mps.unwrap() - 10.0).abs() < 0.01);
+        assert!((a.samples[10].speed_mps.unwrap() - 10.0).abs() < 0.01);
+    }
+
+    #[test]
+    fn fill_speed_irregular_dt() {
+        // t = [0, 1, 3], d = [0, 5, 25] → at i=1 central diff = (25-0)/(3-0) = 8.333
+        let samples = vec![
+            Sample { t: Duration::from_secs(0), lat: 0.0, lon: 0.0, distance_m: Some(0.0),  ..Sample::blank() },
+            Sample { t: Duration::from_secs(1), lat: 0.0, lon: 0.0, distance_m: Some(5.0),  ..Sample::blank() },
+            Sample { t: Duration::from_secs(3), lat: 0.0, lon: 0.0, distance_m: Some(25.0), ..Sample::blank() },
+        ];
+        let mut a = Activity::from_samples(Utc::now(), samples);
+        a.fill_derived_speed();
+        let v = a.samples[1].speed_mps.unwrap();
+        assert!((v - 25.0 / 3.0).abs() < 0.01, "got {}", v);
+    }
+
+    #[test]
+    fn fill_speed_skips_when_neighbor_distance_missing() {
+        // Middle sample has no neighbors with distance → speed stays None.
+        let samples = vec![
+            Sample { t: Duration::from_secs(0), lat: 0.0, lon: 0.0, distance_m: None,       ..Sample::blank() },
+            Sample { t: Duration::from_secs(1), lat: 0.0, lon: 0.0, distance_m: None,       ..Sample::blank() },
+            Sample { t: Duration::from_secs(2), lat: 0.0, lon: 0.0, distance_m: None,       ..Sample::blank() },
+        ];
+        let mut a = Activity::from_samples(Utc::now(), samples);
+        a.fill_derived_speed();
+        assert!(a.samples.iter().all(|s| s.speed_mps.is_none()));
+    }
 }
