@@ -90,6 +90,46 @@ impl Activity {
             self.samples[i].speed_mps = Some(v);
         }
     }
+
+    /// Apply a time-windowed moving average to `speed_mps` on every sample
+    /// that currently has a value. Samples with `speed_mps == None` are left
+    /// unchanged; for the averaging, they are excluded from both pointer
+    /// advancement and sum. Implementation: build parallel `ts`/`vs` vectors of
+    /// only the samples with speed, smooth, and write back.
+    pub fn smooth_speed(&mut self, window: Duration) {
+        let mut ts = Vec::with_capacity(self.samples.len());
+        let mut vs = Vec::with_capacity(self.samples.len());
+        let mut indices = Vec::with_capacity(self.samples.len());
+        for (i, s) in self.samples.iter().enumerate() {
+            if let Some(v) = s.speed_mps {
+                ts.push(s.t);
+                vs.push(v);
+                indices.push(i);
+            }
+        }
+        let out = crate::smooth::moving_avg_time(&ts, &vs, window);
+        for (k, &i) in indices.iter().enumerate() {
+            self.samples[i].speed_mps = Some(out[k]);
+        }
+    }
+
+    /// Like smooth_speed but for `altitude_m`.
+    pub fn smooth_altitude(&mut self, window: Duration) {
+        let mut ts = Vec::with_capacity(self.samples.len());
+        let mut vs = Vec::with_capacity(self.samples.len());
+        let mut indices = Vec::with_capacity(self.samples.len());
+        for (i, s) in self.samples.iter().enumerate() {
+            if let Some(v) = s.altitude_m {
+                ts.push(s.t);
+                vs.push(v);
+                indices.push(i);
+            }
+        }
+        let out = crate::smooth::moving_avg_time(&ts, &vs, window);
+        for (k, &i) in indices.iter().enumerate() {
+            self.samples[i].altitude_m = Some(out[k]);
+        }
+    }
 }
 
 #[cfg(test)]
@@ -242,5 +282,37 @@ mod tests {
         let mut a = Activity::from_samples(Utc::now(), samples);
         a.fill_derived_speed();
         assert!(a.samples.iter().all(|s| s.speed_mps.is_none()));
+    }
+
+    #[test]
+    fn smooth_speed_flattens_alternation() {
+        let samples: Vec<Sample> = (0..10).map(|i| Sample {
+            t: Duration::from_secs(i as u64),
+            lat: 0.0, lon: 0.0,
+            speed_mps: Some(if i % 2 == 0 { 1.0 } else { 3.0 }),
+            ..Sample::blank()
+        }).collect();
+        let mut a = Activity::from_samples(Utc::now(), samples);
+        a.smooth_speed(Duration::from_secs(3));
+        for i in 2..8 {
+            let v = a.samples[i].speed_mps.unwrap();
+            assert!((v - 2.0).abs() < 0.2);
+        }
+    }
+
+    #[test]
+    fn smooth_altitude_flattens_jitter() {
+        let samples: Vec<Sample> = (0..10).map(|i| Sample {
+            t: Duration::from_secs(i as u64),
+            lat: 0.0, lon: 0.0,
+            altitude_m: Some(if i % 2 == 0 { 100.0 } else { 110.0 }),
+            ..Sample::blank()
+        }).collect();
+        let mut a = Activity::from_samples(Utc::now(), samples);
+        a.smooth_altitude(Duration::from_secs(5));
+        for i in 2..8 {
+            let v = a.samples[i].altitude_m.unwrap();
+            assert!((v - 105.0).abs() < 1.5);
+        }
     }
 }
