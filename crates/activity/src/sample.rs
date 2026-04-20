@@ -284,6 +284,26 @@ impl Activity {
         }
     }
 
+    /// Apply the full derivation pipeline in dependency order:
+    ///
+    /// 1. Fill missing `distance_m` from lat/lon.
+    /// 2. Smooth `altitude_m` (5s window).
+    /// 3. Fill missing `speed_mps` from distance, then smooth (3s window).
+    /// 4. Compute `gradient_pct` over 50m rolling windows.
+    /// 5. Compute `elev_gain_cum_m` with 3m hysteresis.
+    ///
+    /// Idempotent: calling `prepare` twice produces the same result (since fills
+    /// are per-sample no-ops when values are already present, and smooths flatten
+    /// noise further but don't diverge).
+    pub fn prepare(&mut self) {
+        self.fill_derived_distance();
+        self.smooth_altitude(std::time::Duration::from_secs(5));
+        self.fill_derived_speed();
+        self.smooth_speed(std::time::Duration::from_secs(3));
+        self.fill_gradient(50.0);
+        self.fill_elev_gain(3.0);
+    }
+
     /// Like smooth_speed but for `altitude_m`.
     pub fn smooth_altitude(&mut self, window: Duration) {
         let mut ts = Vec::with_capacity(self.samples.len());
@@ -653,6 +673,19 @@ mod tests {
         let a = Activity::from_samples(Utc::now(), s);
         let mid = a.sample_at(Duration::from_secs(5));
         assert!(mid.heart_rate_bpm.is_none());
+    }
+
+    #[test]
+    fn prepare_populates_all_derived_on_short_gpx() {
+        let mut a = crate::load_gpx(std::path::Path::new("../../examples/short.gpx")).unwrap();
+        a.prepare();
+        // The fixture has 20 samples; inspect a mid-activity sample.
+        let s = &a.samples[10];
+        assert!(s.distance_m.is_some(), "distance missing");
+        assert!(s.speed_mps.is_some(), "speed missing");
+        assert!(s.altitude_m.is_some(), "altitude missing");
+        assert!(s.elev_gain_cum_m.is_some(), "elev_gain missing");
+        assert!(s.gradient_pct.is_some(), "gradient missing");
     }
 
     #[test]
