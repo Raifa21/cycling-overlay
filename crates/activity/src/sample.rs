@@ -306,12 +306,41 @@ impl Activity {
     /// are per-sample no-ops when values are already present, and smooths flatten
     /// noise further but don't diverge).
     pub fn prepare(&mut self) {
+        self.forward_fill_sensors();
         self.fill_derived_distance();
         self.smooth_altitude(std::time::Duration::from_secs(5));
         self.fill_derived_speed();
         self.smooth_speed(std::time::Duration::from_secs(3));
         self.fill_gradient(50.0);
         self.fill_elev_gain(3.0);
+    }
+
+    /// Forward-fill discrete sensor readings (HR, power, cadence) across samples
+    /// that lack them. FIT records can be sparse for these fields — sub-second
+    /// records sometimes carry only a GPS update, leaving the sensor slots None
+    /// until the next 1 Hz sensor write. Without forward-fill, interpolation
+    /// between a Some endpoint and a None endpoint collapses to None, which
+    /// shows as "--" in readouts on most frames.
+    ///
+    /// Leading samples before the first known value stay None.
+    pub fn forward_fill_sensors(&mut self) {
+        let mut hr: Option<u8> = None;
+        let mut pwr: Option<u16> = None;
+        let mut cad: Option<u8> = None;
+        for s in self.samples.iter_mut() {
+            match s.heart_rate_bpm {
+                Some(v) => hr = Some(v),
+                None => s.heart_rate_bpm = hr,
+            }
+            match s.power_w {
+                Some(v) => pwr = Some(v),
+                None => s.power_w = pwr,
+            }
+            match s.cadence_rpm {
+                Some(v) => cad = Some(v),
+                None => s.cadence_rpm = cad,
+            }
+        }
     }
 
     /// Like smooth_speed but for `altitude_m`.
@@ -835,6 +864,60 @@ mod tests {
         let a = Activity::from_samples(Utc::now(), s);
         let mid = a.sample_at(Duration::from_secs(5));
         assert!(mid.heart_rate_bpm.is_none());
+    }
+
+    #[test]
+    fn forward_fill_sensors_carries_last_known() {
+        let samples = vec![
+            Sample {
+                t: Duration::from_secs(0),
+                lat: 0.0,
+                lon: 0.0,
+                heart_rate_bpm: None,
+                power_w: None,
+                cadence_rpm: None,
+                ..Sample::blank()
+            },
+            Sample {
+                t: Duration::from_secs(1),
+                lat: 0.0,
+                lon: 0.0,
+                heart_rate_bpm: Some(140),
+                power_w: Some(200),
+                cadence_rpm: Some(85),
+                ..Sample::blank()
+            },
+            Sample {
+                t: Duration::from_secs(2),
+                lat: 0.0,
+                lon: 0.0,
+                heart_rate_bpm: None,
+                power_w: None,
+                cadence_rpm: None,
+                ..Sample::blank()
+            },
+            Sample {
+                t: Duration::from_secs(3),
+                lat: 0.0,
+                lon: 0.0,
+                heart_rate_bpm: Some(145),
+                power_w: None,
+                cadence_rpm: None,
+                ..Sample::blank()
+            },
+        ];
+        let mut a = Activity::from_samples(Utc::now(), samples);
+        a.forward_fill_sensors();
+        // Leading sample stays None (no prior value).
+        assert_eq!(a.samples[0].heart_rate_bpm, None);
+        // Sample 2 carries 140/200/85 from sample 1.
+        assert_eq!(a.samples[2].heart_rate_bpm, Some(140));
+        assert_eq!(a.samples[2].power_w, Some(200));
+        assert_eq!(a.samples[2].cadence_rpm, Some(85));
+        // Sample 3 takes its own HR but keeps carried power/cadence.
+        assert_eq!(a.samples[3].heart_rate_bpm, Some(145));
+        assert_eq!(a.samples[3].power_w, Some(200));
+        assert_eq!(a.samples[3].cadence_rpm, Some(85));
     }
 
     #[test]
