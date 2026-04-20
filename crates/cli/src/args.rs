@@ -9,6 +9,7 @@ use std::time::Duration;
 /// color out of the overlay in their editor — much smaller files, much faster
 /// encoding, especially with NVENC.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, ValueEnum)]
+#[clap(rename_all = "snake_case")]
 pub enum Codec {
     /// ProRes 4444 with alpha, .mov. Largest files, moderate encode speed.
     Prores4444,
