@@ -1,0 +1,61 @@
+{
+    "version": 1,
+    "canvas": { "width": 1920, "height": 1080, "fps": 30 },
+    "units": { "speed": "kmh", "distance": "km", "elevation": "m", "temp": "c" },
+    "theme": {
+        "font": "Inter",
+        "fg": "#ffffff",
+        "accent": "#ffcc00",
+        "shadow": null
+    },
+    "rider": { "weight_kg": 70.0 },
+    "widgets": [
+        {
+            "type": "readout", "id": "speed_readout",
+            "metric": "speed",
+            "rect": { "x": 80, "y": 900, "w": 280, "h": 140 },
+            "label": "SPEED", "decimals": 1, "font_size": 80.0
+        },
+        {
+            "type": "readout", "id": "power_readout",
+            "metric": "power",
+            "rect": { "x": 80, "y": 760, "w": 280, "h": 140 },
+            "label": "POWER", "decimals": 0, "font_size": 80.0
+        },
+        {
+            "type": "readout", "id": "wkg_readout",
+            "metric": "w_per_kg",
+            "rect": { "x": 400, "y": 760, "w": 280, "h": 140 },
+            "label": "W/KG", "decimals": 1, "font_size": 80.0
+        },
+        {
+            "type": "readout", "id": "hr_readout",
+            "metric": "heart_rate",
+            "rect": { "x": 80, "y": 620, "w": 280, "h": 140 },
+            "label": "HR", "decimals": 0, "font_size": 80.0
+        },
+        {
+            "type": "readout", "id": "distance_readout",
+            "metric": "distance",
+            "rect": { "x": 80, "y": 480, "w": 280, "h": 140 },
+            "label": "DIST", "decimals": 2, "font_size": 80.0
+        },
+        {
+            "type": "bar", "id": "distance_bar",
+            "metric": "distance",
+            "rect": { "x": 60, "y": 1020, "w": 1800, "h": 40 },
+            "show_text": true,
+            "decimals": 2
+        },
+        {
+            "type": "course", "id": "course_map",
+            "rect": { "x": 1560, "y": 60, "w": 300, "h": 300 },
+            "line_width": 4.0,
+            "dot_radius": 8.0
+        },
+        {
+            "type": "elevation_profile", "id": "elev_profile",
+            "rect": { "x": 60, "y": 60, "w": 1460, "h": 180 }
+        }
+    ]
+}

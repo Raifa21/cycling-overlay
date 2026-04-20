@@ -1,3 +1,4 @@
+pub mod bar;
 pub mod course;
 pub mod elevation_profile;
 pub mod readout;

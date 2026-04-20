@@ -46,6 +46,7 @@ fn readout_speed_matches_golden() {
             accent: "#ffcc00".into(),
             shadow: None,
         },
+        rider: None,
         widgets: vec![Widget::Readout {
             id: "speed".into(),
             metric: "speed".into(),
@@ -103,6 +104,7 @@ fn course_widget_matches_golden() {
             accent: "#ffcc00".into(),
             shadow: None,
         },
+        rider: None,
         widgets: vec![Widget::Course {
             id: "map".into(),
             rect: Rect {
@@ -157,6 +159,7 @@ fn elevation_profile_matches_golden() {
             accent: "#ffcc00".into(),
             shadow: None,
         },
+        rider: None,
         widgets: vec![Widget::ElevationProfile {
             id: "elev".into(),
             rect: Rect {

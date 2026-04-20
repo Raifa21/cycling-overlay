@@ -14,8 +14,9 @@ pub enum Metric {
     Distance,
     ElevGain,
     Gradient,
-    TimeElapsed, // synthetic — derivable from Sample.t
-    TimeOfDay,   // synthetic — derivable from Activity.start_time + Sample.t
+    TimeElapsed,   // synthetic — derivable from Sample.t
+    TimeOfDay,     // synthetic — derivable from Activity.start_time + Sample.t
+    PowerToWeight, // synthetic — power ÷ rider weight (layout-configured)
 }
 
 impl Metric {
@@ -31,6 +32,7 @@ impl Metric {
             Metric::Gradient => "gradient",
             Metric::TimeElapsed => "time_elapsed",
             Metric::TimeOfDay => "time_of_day",
+            Metric::PowerToWeight => "w_per_kg",
         }
     }
 
@@ -47,11 +49,12 @@ impl Metric {
             "gradient" => Some(Metric::Gradient),
             "time_elapsed" => Some(Metric::TimeElapsed),
             "time_of_day" => Some(Metric::TimeOfDay),
+            "w_per_kg" | "power_to_weight" => Some(Metric::PowerToWeight),
             _ => None,
         }
     }
 
-    pub const ALL: [Metric; 10] = [
+    pub const ALL: [Metric; 11] = [
         Metric::Speed,
         Metric::HeartRate,
         Metric::Power,
@@ -62,6 +65,7 @@ impl Metric {
         Metric::Gradient,
         Metric::TimeElapsed,
         Metric::TimeOfDay,
+        Metric::PowerToWeight,
     ];
 }
 
@@ -79,6 +83,10 @@ pub fn metric_present_on_activity(m: Metric, samples: &[Sample]) -> bool {
         Metric::ElevGain => samples.iter().any(|s| s.elev_gain_cum_m.is_some()),
         Metric::Gradient => samples.iter().any(|s| s.gradient_pct.is_some()),
         Metric::TimeElapsed | Metric::TimeOfDay => true,
+        // PowerToWeight is available iff power is — the weight half of the
+        // ratio comes from the layout's rider config, which is validated
+        // elsewhere (runtime falls back to "--" if weight is missing).
+        Metric::PowerToWeight => samples.iter().any(|s| s.power_w.is_some()),
     }
 }
 

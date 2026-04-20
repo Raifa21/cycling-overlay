@@ -9,7 +9,17 @@ pub struct Layout {
     pub canvas: Canvas,
     pub units: Units,
     pub theme: Theme,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub rider: Option<Rider>,
     pub widgets: Vec<Widget>,
+}
+
+/// Rider-specific configuration (separate from layout proper, but colocated
+/// in the same file for v1 so a layout can carry everything needed to render
+/// derived metrics like W/kg).
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq)]
+pub struct Rider {
+    pub weight_kg: f32,
 }
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq)]
@@ -98,6 +108,25 @@ pub enum Widget {
         id: String,
         rect: Rect,
     },
+    /// Horizontal progress bar for a continuous cumulative metric.
+    ///
+    /// v1 supports `metric = "distance"` (auto-maxes at the activity's final
+    /// distance) or `metric = "elev_gain"` (auto-maxes at final cumulative
+    /// gain). `min` defaults to 0.0 when omitted; `max` must be supplied for
+    /// any other metric.
+    Bar {
+        id: String,
+        metric: String,
+        rect: Rect,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        min: Option<f32>,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        max: Option<f32>,
+        #[serde(default)]
+        show_text: bool,
+        #[serde(default)]
+        decimals: u32,
+    },
 }
 
 impl Widget {
@@ -105,7 +134,8 @@ impl Widget {
         match self {
             Widget::Readout { id, .. }
             | Widget::Course { id, .. }
-            | Widget::ElevationProfile { id, .. } => id,
+            | Widget::ElevationProfile { id, .. }
+            | Widget::Bar { id, .. } => id,
         }
     }
 
@@ -113,7 +143,8 @@ impl Widget {
         match self {
             Widget::Readout { rect, .. }
             | Widget::Course { rect, .. }
-            | Widget::ElevationProfile { rect, .. } => *rect,
+            | Widget::ElevationProfile { rect, .. }
+            | Widget::Bar { rect, .. } => *rect,
         }
     }
 }

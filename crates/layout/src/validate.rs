@@ -115,6 +115,7 @@ mod tests {
             canvas: minimal_canvas(),
             units: minimal_units(),
             theme: minimal_theme(),
+            rider: None,
             widgets,
         }
     }

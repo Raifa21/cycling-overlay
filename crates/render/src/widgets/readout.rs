@@ -1,5 +1,5 @@
 use activity::{Activity, Metric, Sample};
-use layout::{DistanceUnit, ElevationUnit, Rect, SpeedUnit, Theme, Units};
+use layout::{DistanceUnit, ElevationUnit, Rect, Rider, SpeedUnit, Theme, Units};
 use std::time::Duration;
 use tiny_skia::{Color, Pixmap};
 
@@ -12,6 +12,7 @@ pub fn render_readout(
     text_ctx: &mut TextCtx,
     theme: &Theme,
     units: &Units,
+    rider: Option<&Rider>,
     rect: Rect,
     metric_name: &str,
     label: &str,
@@ -22,7 +23,7 @@ pub fn render_readout(
 ) {
     let sample = activity.sample_at(t);
     let (value_str, unit_str) = match Metric::from_str(metric_name) {
-        Some(m) => format_metric(m, &sample, units, t, decimals),
+        Some(m) => format_metric(m, &sample, units, rider, t, decimals),
         None => ("--".to_string(), ""),
     };
 
@@ -52,6 +53,7 @@ fn format_metric(
     m: Metric,
     s: &Sample,
     units: &Units,
+    rider: Option<&Rider>,
     t: Duration,
     decimals: u32,
 ) -> (String, &'static str) {
@@ -103,6 +105,10 @@ fn format_metric(
         },
         Metric::TimeElapsed => (format_duration(t), ""),
         Metric::TimeOfDay => (format_duration(t), ""), // placeholder — v1 ignores start_time
+        Metric::PowerToWeight => match (s.power_w, rider.map(|r| r.weight_kg)) {
+            (Some(p), Some(w)) if w > 0.0 => (format!("{:.*}", dec, p as f32 / w), "W/kg"),
+            _ => ("--".into(), ""),
+        },
     }
 }
 
@@ -153,7 +159,7 @@ mod tests {
             elevation: ElevationUnit::M,
             temp: layout::TempUnit::C,
         };
-        let (v, u) = format_metric(Metric::Speed, &s, &units, Duration::ZERO, 1);
+        let (v, u) = format_metric(Metric::Speed, &s, &units, None, Duration::ZERO, 1);
         assert_eq!(v, "36.0");
         assert_eq!(u, "km/h");
     }
@@ -179,7 +185,7 @@ mod tests {
             elevation: ElevationUnit::M,
             temp: layout::TempUnit::C,
         };
-        let (v, u) = format_metric(Metric::Speed, &s, &units, Duration::ZERO, 1);
+        let (v, u) = format_metric(Metric::Speed, &s, &units, None, Duration::ZERO, 1);
         assert_eq!(v, "--");
         assert_eq!(u, "");
     }
@@ -205,9 +211,69 @@ mod tests {
             elevation: ElevationUnit::M,
             temp: layout::TempUnit::C,
         };
-        let (v, u) = format_metric(Metric::Distance, &s, &units, Duration::ZERO, 2);
+        let (v, u) = format_metric(Metric::Distance, &s, &units, None, Duration::ZERO, 2);
         assert_eq!(v, "2.50");
         assert_eq!(u, "km");
+    }
+
+    #[test]
+    fn format_metric_w_per_kg() {
+        let s = Sample {
+            t: Duration::ZERO,
+            lat: 0.0,
+            lon: 0.0,
+            altitude_m: None,
+            speed_mps: None,
+            heart_rate_bpm: None,
+            cadence_rpm: None,
+            power_w: Some(220),
+            distance_m: None,
+            elev_gain_cum_m: None,
+            gradient_pct: None,
+        };
+        let units = Units {
+            speed: SpeedUnit::Kmh,
+            distance: DistanceUnit::Km,
+            elevation: ElevationUnit::M,
+            temp: layout::TempUnit::C,
+        };
+        let rider = Rider { weight_kg: 73.3 };
+        let (v, u) = format_metric(
+            Metric::PowerToWeight,
+            &s,
+            &units,
+            Some(&rider),
+            Duration::ZERO,
+            2,
+        );
+        assert_eq!(v, "3.00");
+        assert_eq!(u, "W/kg");
+    }
+
+    #[test]
+    fn format_metric_w_per_kg_missing_weight() {
+        let s = Sample {
+            t: Duration::ZERO,
+            lat: 0.0,
+            lon: 0.0,
+            altitude_m: None,
+            speed_mps: None,
+            heart_rate_bpm: None,
+            cadence_rpm: None,
+            power_w: Some(250),
+            distance_m: None,
+            elev_gain_cum_m: None,
+            gradient_pct: None,
+        };
+        let units = Units {
+            speed: SpeedUnit::Kmh,
+            distance: DistanceUnit::Km,
+            elevation: ElevationUnit::M,
+            temp: layout::TempUnit::C,
+        };
+        let (v, u) = format_metric(Metric::PowerToWeight, &s, &units, None, Duration::ZERO, 1);
+        assert_eq!(v, "--");
+        assert_eq!(u, "");
     }
 
     #[test]
@@ -231,7 +297,7 @@ mod tests {
             elevation: ElevationUnit::M,
             temp: layout::TempUnit::C,
         };
-        let (v, u) = format_metric(Metric::Distance, &s, &units, Duration::ZERO, 2);
+        let (v, u) = format_metric(Metric::Distance, &s, &units, None, Duration::ZERO, 2);
         assert_eq!(v, "1.00");
         assert_eq!(u, "mi");
     }

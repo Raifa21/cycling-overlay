@@ -33,6 +33,7 @@ pub fn render_frame(
         );
     }
     pixmap.fill(Color::TRANSPARENT);
+    let rider = layout.rider.as_ref();
 
     for widget in &layout.widgets {
         match widget {
@@ -49,6 +50,7 @@ pub fn render_frame(
                     text_ctx,
                     &layout.theme,
                     &layout.units,
+                    rider,
                     *rect,
                     metric,
                     label,
@@ -79,6 +81,31 @@ pub fn render_frame(
                     pixmap,
                     &layout.theme,
                     *rect,
+                    activity,
+                    t,
+                );
+            }
+            Widget::Bar {
+                id: _,
+                metric,
+                rect,
+                min,
+                max,
+                show_text,
+                decimals,
+            } => {
+                crate::widgets::bar::render_bar(
+                    pixmap,
+                    text_ctx,
+                    &layout.theme,
+                    &layout.units,
+                    rider,
+                    *rect,
+                    metric,
+                    *min,
+                    *max,
+                    *show_text,
+                    *decimals,
                     activity,
                     t,
                 );
@@ -118,6 +145,7 @@ mod tests {
                 accent: "#ffcc00".into(),
                 shadow: None,
             },
+            rider: None,
             widgets: vec![],
         }
     }
