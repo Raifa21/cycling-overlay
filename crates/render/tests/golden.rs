@@ -9,6 +9,22 @@ use std::path::Path;
 use std::time::Duration;
 use tiny_skia::Pixmap;
 
+fn mk_sample(secs: u64, lat: f64, lon: f64) -> Sample {
+    Sample {
+        t: Duration::from_secs(secs),
+        lat,
+        lon,
+        altitude_m: None,
+        speed_mps: None,
+        heart_rate_bpm: None,
+        cadence_rpm: None,
+        power_w: None,
+        distance_m: None,
+        elev_gain_cum_m: None,
+        gradient_pct: None,
+    }
+}
+
 #[test]
 fn readout_speed_matches_golden() {
     let layout = Layout {
@@ -64,6 +80,60 @@ fn readout_speed_matches_golden() {
     render_frame(&layout, &activity, Duration::ZERO, &mut ctx, &mut pix).unwrap();
 
     assert_golden(&pix, "readout_speed.png");
+}
+
+#[test]
+fn course_widget_matches_golden() {
+    let layout = Layout {
+        version: 1,
+        canvas: Canvas {
+            width: 300,
+            height: 300,
+            fps: 30,
+        },
+        units: Units {
+            speed: SpeedUnit::Kmh,
+            distance: DistanceUnit::Km,
+            elevation: ElevationUnit::M,
+            temp: TempUnit::C,
+        },
+        theme: Theme {
+            font: "Inter".into(),
+            fg: "#ffffff".into(),
+            accent: "#ffcc00".into(),
+            shadow: None,
+        },
+        widgets: vec![Widget::Course {
+            id: "map".into(),
+            rect: Rect {
+                x: 20,
+                y: 20,
+                w: 260,
+                h: 260,
+            },
+            line_width: 3.0,
+            dot_radius: 8.0,
+        }],
+    };
+
+    // Simple rectangle course: 5 points forming a closed square.
+    let samples = vec![
+        mk_sample(0, 0.0, 0.0),
+        mk_sample(10, 0.0, 0.001),
+        mk_sample(20, 0.001, 0.001),
+        mk_sample(30, 0.001, 0.0),
+        mk_sample(40, 0.0, 0.0),
+    ];
+    let activity = Activity::from_samples(Utc.timestamp_opt(0, 0).unwrap(), samples);
+
+    // Dot lands near the midpoint of the polyline by total time.
+    let t = Duration::from_secs(20);
+
+    let mut ctx = TextCtx::new();
+    let mut pix = Pixmap::new(300, 300).unwrap();
+    render_frame(&layout, &activity, t, &mut ctx, &mut pix).unwrap();
+
+    assert_golden(&pix, "course_mid.png");
 }
 
 fn assert_golden(pix: &Pixmap, name: &str) {

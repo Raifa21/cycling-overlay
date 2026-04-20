@@ -26,8 +26,8 @@ pub fn render_readout(
     };
 
     // Colors: parse hex strings into tiny_skia::Color.
-    let fg = parse_hex(&theme.fg).unwrap_or(Color::WHITE);
-    let accent = parse_hex(&theme.accent).unwrap_or(fg);
+    let fg = super::parse_hex(&theme.fg).unwrap_or(Color::WHITE);
+    let accent = super::parse_hex(&theme.accent).unwrap_or(fg);
 
     // Layout: label takes ~1/3 of height (top), value takes ~2/3 (below).
     let label_size = font_size * 0.35;
@@ -117,73 +117,9 @@ fn format_duration(t: Duration) -> String {
     }
 }
 
-fn parse_hex(s: &str) -> Option<Color> {
-    let s = s.strip_prefix('#')?;
-    let bytes = match s.len() {
-        3 => {
-            let r = u8::from_str_radix(&s[0..1].repeat(2), 16).ok()?;
-            let g = u8::from_str_radix(&s[1..2].repeat(2), 16).ok()?;
-            let b = u8::from_str_radix(&s[2..3].repeat(2), 16).ok()?;
-            [r, g, b, 255]
-        }
-        6 => {
-            let r = u8::from_str_radix(&s[0..2], 16).ok()?;
-            let g = u8::from_str_radix(&s[2..4], 16).ok()?;
-            let b = u8::from_str_radix(&s[4..6], 16).ok()?;
-            [r, g, b, 255]
-        }
-        8 => {
-            let r = u8::from_str_radix(&s[0..2], 16).ok()?;
-            let g = u8::from_str_radix(&s[2..4], 16).ok()?;
-            let b = u8::from_str_radix(&s[4..6], 16).ok()?;
-            let a = u8::from_str_radix(&s[6..8], 16).ok()?;
-            [r, g, b, a]
-        }
-        _ => return None,
-    };
-    Some(Color::from_rgba8(bytes[0], bytes[1], bytes[2], bytes[3]))
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
-
-    #[test]
-    fn parse_hex_rrggbb() {
-        let c = parse_hex("#ffcc00").unwrap();
-        let u8c = c.to_color_u8();
-        assert_eq!(u8c.red(), 0xff);
-        assert_eq!(u8c.green(), 0xcc);
-        assert_eq!(u8c.blue(), 0x00);
-        assert_eq!(u8c.alpha(), 0xff);
-    }
-
-    #[test]
-    fn parse_hex_rgb_short() {
-        let c = parse_hex("#f00").unwrap();
-        let u8c = c.to_color_u8();
-        assert_eq!(u8c.red(), 0xff);
-        assert_eq!(u8c.green(), 0x00);
-        assert_eq!(u8c.blue(), 0x00);
-        assert_eq!(u8c.alpha(), 0xff);
-    }
-
-    #[test]
-    fn parse_hex_rrggbbaa() {
-        let c = parse_hex("#00112233").unwrap();
-        let u8c = c.to_color_u8();
-        assert_eq!(u8c.red(), 0x00);
-        assert_eq!(u8c.green(), 0x11);
-        assert_eq!(u8c.blue(), 0x22);
-        assert_eq!(u8c.alpha(), 0x33);
-    }
-
-    #[test]
-    fn parse_hex_rejects_bad_input() {
-        assert!(parse_hex("ffcc00").is_none()); // missing #
-        assert!(parse_hex("#ggg").is_none());
-        assert!(parse_hex("#12345").is_none());
-    }
 
     #[test]
     fn format_duration_under_hour() {

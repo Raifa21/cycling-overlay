@@ -58,8 +58,21 @@ pub fn render_frame(
                     t,
                 );
             }
-            Widget::Course { .. } => {
-                // Implemented in Task 18.
+            Widget::Course {
+                id: _,
+                rect,
+                line_width,
+                dot_radius,
+            } => {
+                crate::widgets::course::render_course(
+                    pixmap,
+                    &layout.theme,
+                    *rect,
+                    *line_width,
+                    *dot_radius,
+                    activity,
+                    t,
+                );
             }
             Widget::ElevationProfile { .. } => {
                 // Implemented in Task 19.
