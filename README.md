@@ -47,7 +47,16 @@ From `gpx-overlay render --help`:
 
 ## Layout format
 
-Layouts are JSON documents that describe the canvas, units, theme, and a list of widgets (readouts, course map, elevation profile). See [`docs/plans/2026-04-20-gpx-overlay-design.md`](docs/plans/2026-04-20-gpx-overlay-design.md) for the complete schema.
+Layouts are JSON documents that describe the canvas, units, theme, and a list of widgets. Available widget types:
+
+- **Readout** — numeric value with label and unit (speed, power, HR, etc.).
+- **Bar** — horizontal progress bar for a cumulative metric (distance, elevation gain).
+- **Course** — top-down map of the activity track with a moving dot.
+- **ElevationProfile** — elevation-vs-distance trace with a progress marker.
+- **Meter** — linear bar for scalar metrics (speed, power, HR, cadence, altitude, gradient). Horizontal or vertical. Fill / rect / arrow / needle indicators with optional filled track. Major + minor ticks with numbers. Optional value label.
+- **Gauge** — radial/arc version of the same. Configurable arc angles (default 270-degree speedometer). Same indicator + tick options.
+
+See [`docs/plans/2026-04-20-gpx-overlay-design.md`](docs/plans/2026-04-20-gpx-overlay-design.md) for the complete schema.
 
 A minimal layout with a single speed readout:
 
@@ -105,3 +114,4 @@ crates/
 
 - [Design doc](docs/plans/2026-04-20-gpx-overlay-design.md) — architecture, layout schema, metric definitions.
 - [v1 implementation plan](docs/plans/2026-04-20-gpx-overlay-v1-impl.md) — the task breakdown this repo was built from.
+- [Meter / Gauge design](docs/plans/2026-04-22-meter-gauge-design.md) and [implementation plan](docs/plans/2026-04-22-meter-gauge-impl.md) — schema and rendering details for the linear Meter and radial Gauge widgets.
