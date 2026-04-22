@@ -3,6 +3,7 @@
 mod binary;
 mod progress;
 mod session;
+mod state;
 
 #[tauri::command]
 fn hello_from_rust() -> String {
@@ -12,12 +13,15 @@ fn hello_from_rust() -> String {
 fn main() {
     tauri::Builder::default()
         .plugin(tauri_plugin_dialog::init())
+        .manage(state::AppState::default())
         .invoke_handler(tauri::generate_handler![
             hello_from_rust,
             session::session_load,
             session::session_save,
             binary::probe_ffmpeg,
             binary::probe_cli,
+            state::load_activity,
+            state::load_layout,
         ])
         .setup(|_app| Ok(()))
         .run(tauri::generate_context!())
