@@ -1,9 +1,9 @@
 //! Pure math helpers shared by Meter and Gauge. No tiny-skia dependencies.
 //!
 //! These helpers are consumed by the Meter (Task 4+) and Gauge (Task 7+)
-//! widget implementations. The `allow(dead_code)` below applies until those
-//! call sites land.
-#![allow(dead_code)]
+//! widget implementations. `frac` is wired up by Task 4; the remaining
+//! helpers are carry per-item `#[allow(dead_code)]` until later tasks
+//! consume them.
 
 /// Fraction of `v` between `min` and `max`, clamped to [0, 1].
 /// If `max <= min` the range is degenerate — returns 0.
@@ -20,6 +20,7 @@ pub(crate) fn frac(v: f32, min: f32, max: f32) -> f32 {
 /// Intermediate arithmetic runs in `f64` so the returned `f32` matches the
 /// closest representation of the semantic target (e.g. `0.05`, not
 /// `0.049999997`) when the f32 path would introduce a 1-ULP drift.
+#[allow(dead_code)] // wired up in Task 5.
 pub(crate) fn nice_major_interval(min: f32, max: f32) -> f32 {
     if !min.is_finite() || !max.is_finite() {
         return 1.0;
@@ -45,6 +46,7 @@ pub(crate) fn nice_major_interval(min: f32, max: f32) -> f32 {
 
 /// Walk values from `min` to `max` inclusive at `step`. Uses integer indexing
 /// to avoid accumulated float drift over many steps.
+#[allow(dead_code)] // wired up in Task 5.
 pub(crate) fn tick_values(min: f32, max: f32, step: f32) -> impl Iterator<Item = f32> {
     let n = ((max - min) / step).round() as i64;
     (0..=n).map(move |k| min + (k as f32) * step)
@@ -55,6 +57,7 @@ pub(crate) fn tick_values(min: f32, max: f32, step: f32) -> impl Iterator<Item =
 ///
 /// Identity: `to_skia(0) = 90` (up), `to_skia(90) = 0` (right),
 /// `to_skia(-90) = 180` (left), `to_skia(180) = -90` (down).
+#[allow(dead_code)] // wired up in Task 7.
 pub(crate) fn to_skia_angle(deg_up_cw: f32) -> f32 {
     90.0 - deg_up_cw
 }
@@ -67,6 +70,7 @@ pub(crate) fn to_skia_angle(deg_up_cw: f32) -> f32 {
 /// `start_deg` for all `frac`), not a full 360° revolution. Widget
 /// configuration should avoid equal angles unless a degenerate render is
 /// intentional.
+#[allow(dead_code)] // wired up in Task 7.
 pub(crate) fn angle_lerp(start_deg: f32, end_deg: f32, frac: f32) -> f32 {
     let end_eff = if end_deg >= start_deg {
         end_deg

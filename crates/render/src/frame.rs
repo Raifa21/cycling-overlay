@@ -115,8 +115,32 @@ pub fn render_frame(
                     t,
                 );
             }
-            Widget::Meter { .. } => {
-                // Implemented in Task 4.
+            Widget::Meter {
+                id: _,
+                metric,
+                rect,
+                min,
+                max,
+                orientation,
+                indicator,
+                ticks,
+                show_value,
+                value_font_size: _,
+            } => {
+                crate::widgets::meter::render_meter(
+                    pixmap,
+                    &layout.theme,
+                    *rect,
+                    metric,
+                    *min,
+                    *max,
+                    *orientation,
+                    *indicator,
+                    *ticks,
+                    *show_value,
+                    activity,
+                    t,
+                );
             }
             Widget::Gauge { .. } => {
                 // Implemented in Task 6.
