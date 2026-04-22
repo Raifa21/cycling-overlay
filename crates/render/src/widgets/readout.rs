@@ -46,11 +46,26 @@ pub fn render_readout(
     // to the column boundary and the number right-aligns against it with
     // a small gap. When multiple readouts share the same rect width (e.g.,
     // a vertical stack), their numbers and units share column positions
-    // regardless of digit count or unit width.
+    // regardless of digit count.
+    //
+    // Cap the column leftward so the unit's right edge never leaves the
+    // rect. On stacks of identically-sized readouts with identically-wide
+    // units this preserves alignment; on mixed-unit stacks the widest
+    // unit nudges its own column left, but the number column shifts with
+    // it so number + unit stay paired.
     const UNIT_COL_FRAC: f32 = 0.7;
-    let unit_col_left = rect.x as f32 + rect.w as f32 * UNIT_COL_FRAC;
-    let gap = font_size * 0.15;
+    const RIGHT_PAD: f32 = 2.0;
     let unit_size = unit_font_size.unwrap_or(font_size);
+    let gap = font_size * 0.15;
+
+    let default_unit_col_left = rect.x as f32 + rect.w as f32 * UNIT_COL_FRAC;
+    let unit_w = if unit_str.is_empty() {
+        0.0
+    } else {
+        text_ctx.measure_width_numeric(unit_str, unit_size)
+    };
+    let max_unit_col_left = rect.x as f32 + rect.w as f32 - unit_w - RIGHT_PAD;
+    let unit_col_left = default_unit_col_left.min(max_unit_col_left);
 
     let num_w = text_ctx.measure_width_numeric(&value_str, font_size);
     let num_x = unit_col_left - gap - num_w;
