@@ -6,8 +6,16 @@
     layoutInfo,
     previewT,
     previewImage,
+    exportStatus,
   } from "../lib/stores";
-  import { loadActivity, loadLayout, watchLayout, previewFrame } from "../lib/tauri";
+  import {
+    loadActivity,
+    loadLayout,
+    watchLayout,
+    previewFrame,
+    startExport,
+    probeCli,
+  } from "../lib/tauri";
   import CodecSelect from "./CodecSelect.svelte";
 
   async function pickInput() {
@@ -70,6 +78,36 @@
       session.update((s) => ({ ...s, output_path: path }));
     }
   }
+
+  async function doExport() {
+    if (
+      !$session.input_path ||
+      !$session.layout_path ||
+      !$session.output_path ||
+      $session.to_seconds == null
+    ) {
+      console.warn("missing fields; cannot export");
+      return;
+    }
+    try {
+      const cliPath = await probeCli($session.cli_path_override ?? undefined);
+      exportStatus.set("running");
+      await startExport({
+        cli_path: cliPath,
+        input: $session.input_path,
+        layout: $session.layout_path,
+        output: $session.output_path,
+        codec: $session.codec,
+        quality: $session.quality,
+        chromakey: $session.chromakey,
+        from_seconds: $session.from_seconds,
+        to_seconds: $session.to_seconds,
+      });
+    } catch (e) {
+      exportStatus.set("error");
+      console.error("start_export failed:", e);
+    }
+  }
 </script>
 
 <aside class="sidebar">
@@ -123,6 +161,18 @@
       />
     </div>
   </div>
+
+  <button
+    class="primary"
+    on:click={doExport}
+    disabled={$exportStatus === "running"
+      || !$session.input_path
+      || !$session.layout_path
+      || !$session.output_path
+      || $session.to_seconds == null}
+  >
+    {$exportStatus === "running" ? "Exporting…" : "Export"}
+  </button>
 </aside>
 
 <style>
@@ -173,4 +223,15 @@
     border: 1px solid #444;
   }
   .time-row span { color: #888; }
+  .primary {
+    margin-top: 1rem;
+    padding: 0.6rem 1rem;
+    background: #4a6;
+    color: white;
+    border: 0;
+    cursor: pointer;
+    font-weight: 600;
+  }
+  .primary:hover:not(:disabled) { background: #5b7; }
+  .primary:disabled { background: #333; color: #888; cursor: not-allowed; }
 </style>
