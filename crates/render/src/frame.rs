@@ -145,8 +145,37 @@ pub fn render_frame(
                     t,
                 );
             }
-            Widget::Gauge { .. } => {
-                // Implemented in Task 6.
+            Widget::Gauge {
+                id: _,
+                metric,
+                rect,
+                min,
+                max,
+                start_deg,
+                end_deg,
+                indicator,
+                ticks,
+                show_value,
+                value_font_size,
+            } => {
+                crate::widgets::gauge::render_gauge(
+                    pixmap,
+                    text_ctx,
+                    &layout.theme,
+                    &layout.units,
+                    *rect,
+                    metric,
+                    *min,
+                    *max,
+                    *start_deg,
+                    *end_deg,
+                    *indicator,
+                    *ticks,
+                    *show_value,
+                    *value_font_size,
+                    activity,
+                    t,
+                );
             }
         }
     }

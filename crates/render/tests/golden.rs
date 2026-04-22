@@ -534,6 +534,88 @@ fn meter_hr_arrow_vertical_matches_golden() {
     assert_golden(&pix, "meter_hr_arrow_vertical.png");
 }
 
+#[test]
+fn gauge_speed_fill_matches_golden() {
+    use activity::{Activity, Sample};
+    use chrono::{TimeZone, Utc};
+    use layout::{
+        Canvas, DistanceUnit, ElevationUnit, Layout, Rect, SpeedUnit, TempUnit, Theme, Units,
+        Widget,
+    };
+    use render::{render_frame, TextCtx};
+    use std::time::Duration;
+    use tiny_skia::{Color, Pixmap};
+
+    let layout = Layout {
+        version: 1,
+        canvas: Canvas {
+            width: 300,
+            height: 300,
+            fps: 30,
+        },
+        units: Units {
+            speed: SpeedUnit::Kmh,
+            distance: DistanceUnit::Km,
+            elevation: ElevationUnit::M,
+            temp: TempUnit::C,
+        },
+        theme: Theme {
+            font: "Inter".into(),
+            fg: "#ffffff".into(),
+            accent: "#ffcc00".into(),
+            shadow: None,
+        },
+        rider: None,
+        widgets: vec![Widget::Gauge {
+            id: "spd_g".into(),
+            metric: "speed".into(),
+            rect: Rect {
+                x: 10,
+                y: 10,
+                w: 280,
+                h: 280,
+            },
+            min: 0.0,
+            max: 60.0,
+            start_deg: -135.0,
+            end_deg: 135.0,
+            indicator: layout::Indicator::default(), // Fill
+            ticks: layout::Ticks::default(),
+            show_value: false,
+            value_font_size: None,
+        }],
+    };
+
+    let sample = Sample {
+        t: Duration::ZERO,
+        lat: 0.0,
+        lon: 0.0,
+        altitude_m: None,
+        speed_mps: Some(30.0 / 3.6), // 30 km/h = 50%
+        heart_rate_bpm: None,
+        cadence_rpm: None,
+        power_w: None,
+        distance_m: None,
+        elev_gain_cum_m: None,
+        gradient_pct: None,
+    };
+    let activity = Activity::from_samples(Utc.timestamp_opt(0, 0).unwrap(), vec![sample]);
+
+    let mut ctx = TextCtx::new();
+    let mut pix = Pixmap::new(300, 300).unwrap();
+    render_frame(
+        &layout,
+        &activity,
+        Duration::ZERO,
+        &mut ctx,
+        &mut pix,
+        Color::TRANSPARENT,
+    )
+    .unwrap();
+
+    assert_golden(&pix, "gauge_speed_fill.png");
+}
+
 fn assert_golden(pix: &Pixmap, name: &str) {
     let golden_path = Path::new("tests/golden").join(name);
     let actual_img: RgbaImage = RgbaImage::from_raw(pix.width(), pix.height(), pix.data().to_vec())

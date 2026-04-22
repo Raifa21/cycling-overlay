@@ -2,8 +2,7 @@
 //!
 //! `frac` (wired by Task 4) and `nice_major_interval` / `tick_values`
 //! (wired by Task 5) are called from the Meter. `to_skia_angle` and
-//! `angle_lerp` carry per-item `#[allow(dead_code)]` until Gauge (Task 7+)
-//! consumes them.
+//! `angle_lerp` are consumed by the Gauge (Task 7+).
 
 /// Fraction of `v` between `min` and `max`, clamped to [0, 1].
 /// If `max <= min` the range is degenerate — returns 0.
@@ -55,7 +54,6 @@ pub(crate) fn tick_values(min: f32, max: f32, step: f32) -> impl Iterator<Item =
 ///
 /// Identity: `to_skia(0) = 90` (up), `to_skia(90) = 0` (right),
 /// `to_skia(-90) = 180` (left), `to_skia(180) = -90` (down).
-#[allow(dead_code)] // wired up in Task 7.
 pub(crate) fn to_skia_angle(deg_up_cw: f32) -> f32 {
     90.0 - deg_up_cw
 }
@@ -68,7 +66,6 @@ pub(crate) fn to_skia_angle(deg_up_cw: f32) -> f32 {
 /// `start_deg` for all `frac`), not a full 360° revolution. Widget
 /// configuration should avoid equal angles unless a degenerate render is
 /// intentional.
-#[allow(dead_code)] // wired up in Task 7.
 pub(crate) fn angle_lerp(start_deg: f32, end_deg: f32, frac: f32) -> f32 {
     let end_eff = if end_deg >= start_deg {
         end_deg

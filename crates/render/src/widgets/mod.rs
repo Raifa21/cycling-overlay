@@ -1,6 +1,7 @@
 pub mod bar;
 pub mod course;
 pub mod elevation_profile;
+pub mod gauge;
 pub mod meter;
 pub mod readout;
 pub mod scale;
