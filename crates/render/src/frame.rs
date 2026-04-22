@@ -129,7 +129,9 @@ pub fn render_frame(
             } => {
                 crate::widgets::meter::render_meter(
                     pixmap,
+                    text_ctx,
                     &layout.theme,
+                    &layout.units,
                     *rect,
                     metric,
                     *min,
