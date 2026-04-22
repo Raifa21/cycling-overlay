@@ -11,9 +11,9 @@ use crate::widgets::scale::{frac, nice_major_interval, tick_values};
 
 /// Render a linear meter widget into `pixmap`.
 ///
-/// v2 (Task 5): horizontal + vertical, `IndicatorKind::Fill`, major + minor
-/// ticks, optional tick numbers. Remaining indicator kinds (`Rect`, `Arrow`,
-/// `Needle`), the `fill_under` combined mode, and `show_value` land in Task 6.
+/// v3 (Task 6): adds `IndicatorKind::Rect`, `Arrow`, and `Needle` markers for
+/// both orientations, honors `indicator.fill_under` under any non-Fill marker,
+/// and renders the current value + unit string when `show_value` is true.
 #[allow(clippy::too_many_arguments)]
 pub fn render_meter(
     pixmap: &mut Pixmap,
@@ -27,7 +27,8 @@ pub fn render_meter(
     orientation: Orientation,
     indicator: Indicator,
     ticks: Ticks,
-    _show_value: bool,       // Task 6
+    show_value: bool,
+    value_font_size: Option<f32>,
     activity: &Activity,
     t: Duration,
 ) {
@@ -35,9 +36,15 @@ pub fn render_meter(
         return;
     };
     let sample = activity.sample_at(t);
-    let Some(current) = pull_value(metric, &sample, units) else {
+    let current_opt = pull_value(metric, &sample, units);
+    // Early-out only when the metric is completely absent *and* we're not
+    // asked to show a value. When `show_value` is on, we still want to draw
+    // the track, ticks, and "--" placeholder so the widget doesn't visually
+    // disappear on missing samples.
+    if current_opt.is_none() && !show_value {
         return;
-    };
+    }
+    let current = current_opt.unwrap_or(min);
 
     let fg = super::parse_hex(&theme.fg).unwrap_or(Color::WHITE);
     let accent = super::parse_hex(&theme.accent).unwrap_or(fg);
@@ -65,8 +72,10 @@ pub fn render_meter(
         }
     };
 
-    // Fill portion.
-    if matches!(indicator.kind, IndicatorKind::Fill) || indicator.fill_under {
+    // Fill portion. Only draw when we actually have a value — a missing
+    // sample with show_value=true still gets an empty track + "--" label.
+    let has_value = current_opt.is_some();
+    if has_value && (matches!(indicator.kind, IndicatorKind::Fill) || indicator.fill_under) {
         match orientation {
             Orientation::Horizontal => {
                 let filled_w = track_w * f;
@@ -152,6 +161,135 @@ pub fn render_meter(
             }
         }
     }
+
+    // Non-Fill markers (Rect / Arrow / Needle). We draw these after the
+    // track + ticks so the marker sits on top. Only draw when we have a
+    // current value — a missing sample renders the empty track + "--".
+    if has_value && !matches!(indicator.kind, IndicatorKind::Fill) {
+        match orientation {
+            Orientation::Horizontal => {
+                let pos_x = track_x + track_w * f;
+                match indicator.kind {
+                    IndicatorKind::Fill => unreachable!(),
+                    IndicatorKind::Rect => {
+                        let marker_w = (thickness * 0.2).max(2.0);
+                        draw_rect(
+                            pixmap,
+                            pos_x - marker_w * 0.5,
+                            track_y,
+                            marker_w,
+                            thickness,
+                            fg,
+                        );
+                    }
+                    IndicatorKind::Arrow => {
+                        let half_base = thickness * 0.3;
+                        let height = thickness * 0.4;
+                        draw_triangle(
+                            pixmap,
+                            (pos_x, track_y),
+                            (pos_x - half_base, track_y - height),
+                            (pos_x + half_base, track_y - height),
+                            fg,
+                        );
+                    }
+                    IndicatorKind::Needle => {
+                        let overshoot = thickness * 0.4;
+                        draw_line(
+                            pixmap,
+                            pos_x,
+                            track_y - overshoot,
+                            pos_x,
+                            track_y + thickness + overshoot,
+                            fg,
+                            2.0,
+                        );
+                    }
+                }
+            }
+            Orientation::Vertical => {
+                // f=0 at bottom, f=1 at top.
+                let pos_y = track_y + track_h * (1.0 - f);
+                match indicator.kind {
+                    IndicatorKind::Fill => unreachable!(),
+                    IndicatorKind::Rect => {
+                        let marker_h = (thickness * 0.2).max(2.0);
+                        draw_rect(
+                            pixmap,
+                            track_x,
+                            pos_y - marker_h * 0.5,
+                            thickness,
+                            marker_h,
+                            fg,
+                        );
+                    }
+                    IndicatorKind::Arrow => {
+                        // Ticks go to the right of the vertical track, so we
+                        // place the arrow on the left pointing inward (right).
+                        // Apex at the track's left edge, base off to the left.
+                        let half_base = thickness * 0.3;
+                        let width = thickness * 0.4;
+                        draw_triangle(
+                            pixmap,
+                            (track_x, pos_y),
+                            (track_x - width, pos_y - half_base),
+                            (track_x - width, pos_y + half_base),
+                            fg,
+                        );
+                    }
+                    IndicatorKind::Needle => {
+                        let overshoot = thickness * 0.4;
+                        draw_line(
+                            pixmap,
+                            track_x - overshoot,
+                            pos_y,
+                            track_x + thickness + overshoot,
+                            pos_y,
+                            fg,
+                            2.0,
+                        );
+                    }
+                }
+            }
+        }
+    }
+
+    // show_value: render "VAL UNIT" (or "-- UNIT") outside the track band.
+    if show_value {
+        let suffix = unit_suffix(metric, units);
+        let value_str = match current_opt {
+            Some(v) => format!("{:.*}", ticks.decimals as usize, v),
+            None => "--".to_string(),
+        };
+        let text = if suffix.is_empty() {
+            value_str
+        } else {
+            format!("{} {}", value_str, suffix)
+        };
+
+        match orientation {
+            Orientation::Horizontal => {
+                let font_size = value_font_size.unwrap_or(rect.h as f32 * 0.2);
+                let w = text_ctx.measure_width(&text, font_size);
+                let x = rect.x as f32 + (rect.w as f32 - w) * 0.5;
+                // Sit the label above the track band. TextCtx::draw's `y` is
+                // the top of the layout box; place the top so the baseline
+                // lands a small gap above the track top.
+                let y = track_y - font_size * 1.05;
+                text_ctx.draw(pixmap, &text, x, y, font_size, fg);
+            }
+            Orientation::Vertical => {
+                let font_size = value_font_size.unwrap_or(rect.w as f32 * 0.2);
+                let w = text_ctx.measure_width(&text, font_size);
+                // Center vertically within the rect, right-anchor against
+                // the track's left edge (a small gap keeps it off the track
+                // outline).
+                let x = track_x - 8.0 - w;
+                let y = rect.y as f32 + (rect.h as f32 - font_size) * 0.5;
+                text_ctx.draw(pixmap, &text, x, y, font_size, fg);
+            }
+        }
+    }
 }
 
 fn draw_rect(pixmap: &mut Pixmap, x: f32, y: f32, w: f32, h: f32, color: Color) {
@@ -218,6 +356,32 @@ fn draw_tick(
             let x0 = track_x + track_w;
             draw_line(pixmap, x0, y, x0 + tick_len, y, color, 1.5);
         }
+    }
+}
+
+fn draw_triangle(
+    pixmap: &mut Pixmap,
+    a: (f32, f32),
+    b: (f32, f32),
+    c: (f32, f32),
+    color: Color,
+) {
+    let mut pb = PathBuilder::new();
+    pb.move_to(a.0, a.1);
+    pb.line_to(b.0, b.1);
+    pb.line_to(c.0, c.1);
+    pb.close();
+    if let Some(path) = pb.finish() {
+        let mut paint = Paint::default();
+        paint.set_color(color);
+        paint.anti_alias = true;
+        pixmap.fill_path(
+            &path,
+            &paint,
+            FillRule::Winding,
+            Transform::identity(),
+            None,
+        );
     }
 }
 
@@ -316,10 +480,8 @@ pub(crate) fn pull_value(m: Metric, s: &Sample, units: &Units) -> Option<f32> {
 /// Return the short unit suffix for a metric (e.g. `"km/h"`, `"m"`, `"%"`).
 /// Mirrors `pull_value`'s unit conversion so the two stay in lockstep.
 ///
-/// Not called from render code yet (tick numbers dropped the unit suffix);
-/// retained for Task 6 (`show_value`) / Task 7 (shared-formatter refactor)
-/// and exercised by the unit tests below.
-#[allow(dead_code)]
+/// Used by `show_value` to append a unit to the current-value string and
+/// reused by Gauge in Task 7; a shared-formatter refactor is deferred.
 pub(crate) fn unit_suffix(m: Metric, units: &Units) -> &'static str {
     match m {
         Metric::Speed => match units.speed {
@@ -427,5 +589,30 @@ mod tests {
     #[test]
     fn unit_suffix_gradient_is_percent() {
         assert_eq!(unit_suffix(Metric::Gradient, &kmh_units()), "%");
+    }
+
+    // Pure-math anchors for the marker geometry. We don't render here —
+    // the golden tests cover the actual pixel layout — but these lock in the
+    // scale::frac contract the marker code relies on so a refactor of
+    // `frac` wouldn't silently shift every marker by half a pixel.
+    #[test]
+    fn rect_marker_centered_on_value() {
+        // rect.w=100, min=0, max=100, current=50 → frac=0.5, marker center at
+        // rect.x + 50. We test frac directly.
+        assert!((frac(50.0, 0.0, 100.0) - 0.5).abs() < 1e-4);
+    }
+
+    #[test]
+    fn arrow_marker_anchored_at_value() {
+        // 25% along a 0..=80 range should land at frac=0.25, i.e. the arrow
+        // apex sits 25% along the track.
+        assert!((frac(20.0, 0.0, 80.0) - 0.25).abs() < 1e-4);
+    }
+
+    #[test]
+    fn needle_marker_clamps_above_range() {
+        // Values above max clamp to 1.0 so the needle sits at the far end
+        // instead of shooting past the track.
+        assert!((frac(500.0, 0.0, 100.0) - 1.0).abs() < 1e-4);
     }
 }

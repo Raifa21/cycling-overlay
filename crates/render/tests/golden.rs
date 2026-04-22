@@ -366,6 +366,174 @@ fn meter_power_vertical_matches_golden() {
     assert_golden(&pix, "meter_power_vertical.png");
 }
 
+#[test]
+fn meter_cadence_needle_matches_golden() {
+    use activity::{Activity, Sample};
+    use chrono::{TimeZone, Utc};
+    use layout::{
+        Canvas, DistanceUnit, ElevationUnit, Layout, Rect, SpeedUnit, TempUnit, Theme, Units,
+        Widget,
+    };
+    use render::{render_frame, TextCtx};
+    use std::time::Duration;
+    use tiny_skia::{Color, Pixmap};
+
+    let layout = Layout {
+        version: 1,
+        canvas: Canvas {
+            width: 600,
+            height: 100,
+            fps: 30,
+        },
+        units: Units {
+            speed: SpeedUnit::Kmh,
+            distance: DistanceUnit::Km,
+            elevation: ElevationUnit::M,
+            temp: TempUnit::C,
+        },
+        theme: Theme {
+            font: "Inter".into(),
+            fg: "#ffffff".into(),
+            accent: "#ffcc00".into(),
+            shadow: None,
+        },
+        rider: None,
+        widgets: vec![Widget::Meter {
+            id: "cad".into(),
+            metric: "cadence".into(),
+            rect: Rect {
+                x: 20,
+                y: 30,
+                w: 560,
+                h: 50,
+            },
+            min: 0.0,
+            max: 120.0,
+            orientation: layout::Orientation::Horizontal,
+            indicator: layout::Indicator {
+                kind: layout::IndicatorKind::Needle,
+                fill_under: true,
+            },
+            ticks: layout::Ticks::default(),
+            show_value: true,
+            value_font_size: None,
+        }],
+    };
+
+    let sample = Sample {
+        t: Duration::ZERO,
+        lat: 0.0,
+        lon: 0.0,
+        altitude_m: None,
+        speed_mps: None,
+        heart_rate_bpm: None,
+        cadence_rpm: Some(80),
+        power_w: None,
+        distance_m: None,
+        elev_gain_cum_m: None,
+        gradient_pct: None,
+    };
+    let activity = Activity::from_samples(Utc.timestamp_opt(0, 0).unwrap(), vec![sample]);
+
+    let mut ctx = TextCtx::new();
+    let mut pix = Pixmap::new(600, 100).unwrap();
+    render_frame(
+        &layout,
+        &activity,
+        Duration::ZERO,
+        &mut ctx,
+        &mut pix,
+        Color::TRANSPARENT,
+    )
+    .unwrap();
+
+    assert_golden(&pix, "meter_cadence_needle.png");
+}
+
+#[test]
+fn meter_hr_arrow_vertical_matches_golden() {
+    use activity::{Activity, Sample};
+    use chrono::{TimeZone, Utc};
+    use layout::{
+        Canvas, DistanceUnit, ElevationUnit, Layout, Rect, SpeedUnit, TempUnit, Theme, Units,
+        Widget,
+    };
+    use render::{render_frame, TextCtx};
+    use std::time::Duration;
+    use tiny_skia::{Color, Pixmap};
+
+    let layout = Layout {
+        version: 1,
+        canvas: Canvas {
+            width: 240,
+            height: 400,
+            fps: 30,
+        },
+        units: Units {
+            speed: SpeedUnit::Kmh,
+            distance: DistanceUnit::Km,
+            elevation: ElevationUnit::M,
+            temp: TempUnit::C,
+        },
+        theme: Theme {
+            font: "Inter".into(),
+            fg: "#ffffff".into(),
+            accent: "#ffcc00".into(),
+            shadow: None,
+        },
+        rider: None,
+        widgets: vec![Widget::Meter {
+            id: "hr".into(),
+            metric: "heart_rate".into(),
+            rect: Rect {
+                x: 40,
+                y: 20,
+                w: 120,
+                h: 360,
+            },
+            min: 60.0,
+            max: 200.0,
+            orientation: layout::Orientation::Vertical,
+            indicator: layout::Indicator {
+                kind: layout::IndicatorKind::Arrow,
+                fill_under: false,
+            },
+            ticks: layout::Ticks::default(),
+            show_value: false,
+            value_font_size: None,
+        }],
+    };
+
+    let sample = Sample {
+        t: Duration::ZERO,
+        lat: 0.0,
+        lon: 0.0,
+        altitude_m: None,
+        speed_mps: None,
+        heart_rate_bpm: Some(140),
+        cadence_rpm: None,
+        power_w: None,
+        distance_m: None,
+        elev_gain_cum_m: None,
+        gradient_pct: None,
+    };
+    let activity = Activity::from_samples(Utc.timestamp_opt(0, 0).unwrap(), vec![sample]);
+
+    let mut ctx = TextCtx::new();
+    let mut pix = Pixmap::new(240, 400).unwrap();
+    render_frame(
+        &layout,
+        &activity,
+        Duration::ZERO,
+        &mut ctx,
+        &mut pix,
+        Color::TRANSPARENT,
+    )
+    .unwrap();
+
+    assert_golden(&pix, "meter_hr_arrow_vertical.png");
+}
+
 fn assert_golden(pix: &Pixmap, name: &str) {
     let golden_path = Path::new("tests/golden").join(name);
     let actual_img: RgbaImage = RgbaImage::from_raw(pix.width(), pix.height(), pix.data().to_vec())

@@ -125,7 +125,7 @@ pub fn render_frame(
                 indicator,
                 ticks,
                 show_value,
-                value_font_size: _,
+                value_font_size,
             } => {
                 crate::widgets::meter::render_meter(
                     pixmap,
@@ -140,6 +140,7 @@ pub fn render_frame(
                     *indicator,
                     *ticks,
                     *show_value,
+                    *value_font_size,
                     activity,
                     t,
                 );
