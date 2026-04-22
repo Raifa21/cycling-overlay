@@ -1,10 +1,10 @@
 use activity::{Activity, Metric};
 use layout::{Indicator, IndicatorKind, Rect, Theme, Ticks, Units};
 use std::time::Duration;
-use tiny_skia::{Color, Paint, PathBuilder, Pixmap, Stroke, Transform};
+use tiny_skia::{Color, FillRule, Paint, PathBuilder, Pixmap, Stroke, Transform};
 
 use crate::text::TextCtx;
-use crate::widgets::meter::pull_value;
+use crate::widgets::meter::{pull_value, unit_suffix};
 use crate::widgets::scale::{angle_lerp, frac, nice_major_interval, tick_values, to_skia_angle};
 
 // Tick/number geometry constants. Task 10 may factor these into a shared
@@ -16,9 +16,9 @@ const NUMBER_GAP: f32 = 4.0; // pixels between tick outer end and number
 
 /// Render a radial gauge widget.
 ///
-/// v2 (Task 8): default 270° arc with Fill indicator plus major/minor ticks
-/// and (optional) number labels. Still no markers or center label — those
-/// land in Task 9.
+/// v3 (Task 9): 270° default arc with Fill / Rect / Arrow / Needle markers,
+/// optional `fill_under` accent arc, major/minor ticks with number labels, and
+/// optional `show_value` center label with unit suffix.
 #[allow(clippy::too_many_arguments)]
 pub fn render_gauge(
     pixmap: &mut Pixmap,
@@ -33,8 +33,8 @@ pub fn render_gauge(
     end_deg: f32,
     indicator: Indicator,
     ticks: Ticks,
-    _show_value: bool, // Task 9
-    _value_font_size: Option<f32>,
+    show_value: bool,
+    value_font_size: Option<f32>,
     activity: &Activity,
     t: Duration,
 ) {
@@ -144,6 +144,140 @@ pub fn render_gauge(
             }
         }
     }
+
+    // Radial marker: Rect / Arrow / Needle. Fill already rendered above.
+    // We draw after the ticks so the marker sits on top of any coincident
+    // tick line. Skip when we have no current value — missing samples still
+    // get a track, ticks, and "--" in the center (if show_value is on).
+    if let Some(v) = current {
+        if !matches!(indicator.kind, IndicatorKind::Fill) {
+            let f = frac(v, min, max);
+            let deg = angle_lerp(start_deg, end_deg, f);
+            let s = to_skia_angle(deg).to_radians();
+            let (cos_a, sin_a) = (s.cos(), s.sin());
+            // Outward-pointing unit vector from center (y flipped for screen).
+            let outward = (cos_a, -sin_a);
+            // Tangent to arc, 90° CCW from outward.
+            let tangent = (-outward.1, outward.0);
+
+            match indicator.kind {
+                IndicatorKind::Fill => unreachable!(),
+                IndicatorKind::Rect => {
+                    // Small filled rect centered on the mid-track radius,
+                    // tangent to the arc. tw = half-width along tangent,
+                    // th = half-height along outward (overhangs the track).
+                    let center_rad = r_outer - thickness * 0.5;
+                    let center = (
+                        cx + center_rad * outward.0,
+                        cy + center_rad * outward.1,
+                    );
+                    let tw = thickness * 0.125;
+                    let th = thickness * 0.55;
+                    let half_tan = (tangent.0 * tw, tangent.1 * tw);
+                    let half_out = (outward.0 * th, outward.1 * th);
+                    let c1 = (
+                        center.0 - half_tan.0 - half_out.0,
+                        center.1 - half_tan.1 - half_out.1,
+                    );
+                    let c2 = (
+                        center.0 + half_tan.0 - half_out.0,
+                        center.1 + half_tan.1 - half_out.1,
+                    );
+                    let c3 = (
+                        center.0 + half_tan.0 + half_out.0,
+                        center.1 + half_tan.1 + half_out.1,
+                    );
+                    let c4 = (
+                        center.0 - half_tan.0 + half_out.0,
+                        center.1 - half_tan.1 + half_out.1,
+                    );
+                    fill_quad(pixmap, c1, c2, c3, c4, fg);
+                }
+                IndicatorKind::Arrow => {
+                    // Triangle sitting outside the ticks, apex on the outer
+                    // edge of the tick row, base further out. This keeps
+                    // the arrow from overlapping the tick numbers that sit
+                    // just past the major-tick outer end.
+                    let major_len = thickness * MAJOR_TICK_LEN_RATIO;
+                    let number_font_size =
+                        (thickness * 0.8).clamp(NUMBER_FONT_SIZE_MIN, 20.0);
+                    // Apex sits past major-tick outer end + number gap +
+                    // rough number height so we clear tick labels.
+                    let apex_rad = if ticks.show_numbers {
+                        r_outer + major_len + NUMBER_GAP + number_font_size + 4.0
+                    } else {
+                        r_outer + major_len + 4.0
+                    };
+                    let base_rad = apex_rad + thickness * 0.8;
+                    let half_base = thickness * 0.35;
+                    let apex = (cx + apex_rad * outward.0, cy + apex_rad * outward.1);
+                    let base_mid =
+                        (cx + base_rad * outward.0, cy + base_rad * outward.1);
+                    let base_a = (
+                        base_mid.0 - tangent.0 * half_base,
+                        base_mid.1 - tangent.1 * half_base,
+                    );
+                    let base_b = (
+                        base_mid.0 + tangent.0 * half_base,
+                        base_mid.1 + tangent.1 * half_base,
+                    );
+                    draw_triangle(pixmap, apex, base_a, base_b, fg);
+                }
+                IndicatorKind::Needle => {
+                    // Thin line from inner edge of track to a small
+                    // overshoot past the outer edge.
+                    let r_inner = r_outer - thickness;
+                    let r_tip = r_outer + thickness * 0.3;
+                    let p1 = (cx + r_inner * outward.0, cy + r_inner * outward.1);
+                    let p2 = (cx + r_tip * outward.0, cy + r_tip * outward.1);
+                    draw_line(pixmap, p1.0, p1.1, p2.0, p2.1, fg, 2.5);
+
+                    // Hub: small filled circle at the pivot. Draw BEFORE
+                    // show_value so the text reads cleanly over it.
+                    let hub_r = thickness * 0.4;
+                    let mut pb = PathBuilder::new();
+                    pb.push_circle(cx, cy, hub_r);
+                    if let Some(path) = pb.finish() {
+                        let mut paint = Paint::default();
+                        paint.set_color(fg);
+                        paint.anti_alias = true;
+                        pixmap.fill_path(
+                            &path,
+                            &paint,
+                            FillRule::Winding,
+                            Transform::identity(),
+                            None,
+                        );
+                    }
+                }
+            }
+        }
+    }
+
+    // show_value: centered at (cx, cy). Unit suffix appended (e.g. "40.0
+    // km/h"). "--" placeholder when the metric has no value on this sample.
+    if show_value {
+        let font_size =
+            value_font_size.unwrap_or((rect.w.min(rect.h) as f32) * 0.15);
+        let suffix = unit_suffix(metric, units);
+        let text = match current {
+            Some(v) => {
+                if suffix.is_empty() {
+                    format!("{:.*}", ticks.decimals as usize, v)
+                } else {
+                    format!("{:.*} {}", ticks.decimals as usize, v, suffix)
+                }
+            }
+            None => "--".to_string(),
+        };
+        let text_w = text_ctx.measure_width(&text, font_size);
+        // cosmic-text positions glyphs from the top of the layout box;
+        // pull up by ~35% of font size so the visible glyph mass centers
+        // on (cx, cy).
+        let draw_x = cx - text_w * 0.5;
+        let draw_y = cy - font_size * 0.35;
+        text_ctx.draw(pixmap, &text, draw_x, draw_y, font_size, fg);
+    }
 }
 
 /// Stroke a circular arc from `start_deg_user` to `end_deg_user` (user
@@ -216,6 +350,59 @@ fn draw_line(pixmap: &mut Pixmap, x0: f32, y0: f32, x1: f32, y1: f32, color: Col
             ..Default::default()
         };
         pixmap.stroke_path(&path, &paint, &stroke, Transform::identity(), None);
+    }
+}
+
+// Local copy of meter.rs's `draw_triangle`, used by the Arrow marker.
+// Same rationale as `draw_line` — kept local until Task 10's primitives pass.
+fn draw_triangle(pixmap: &mut Pixmap, a: (f32, f32), b: (f32, f32), c: (f32, f32), color: Color) {
+    let mut pb = PathBuilder::new();
+    pb.move_to(a.0, a.1);
+    pb.line_to(b.0, b.1);
+    pb.line_to(c.0, c.1);
+    pb.close();
+    if let Some(path) = pb.finish() {
+        let mut paint = Paint::default();
+        paint.set_color(color);
+        paint.anti_alias = true;
+        pixmap.fill_path(
+            &path,
+            &paint,
+            FillRule::Winding,
+            Transform::identity(),
+            None,
+        );
+    }
+}
+
+// Fill a (possibly rotated) quadrilateral defined by four corner points in
+// order. Used by the Rect marker where the quad is tangent to the arc — a
+// plain axis-aligned `Rect::from_xywh` won't do.
+fn fill_quad(
+    pixmap: &mut Pixmap,
+    a: (f32, f32),
+    b: (f32, f32),
+    c: (f32, f32),
+    d: (f32, f32),
+    color: Color,
+) {
+    let mut pb = PathBuilder::new();
+    pb.move_to(a.0, a.1);
+    pb.line_to(b.0, b.1);
+    pb.line_to(c.0, c.1);
+    pb.line_to(d.0, d.1);
+    pb.close();
+    if let Some(path) = pb.finish() {
+        let mut paint = Paint::default();
+        paint.set_color(color);
+        paint.anti_alias = true;
+        pixmap.fill_path(
+            &path,
+            &paint,
+            FillRule::Winding,
+            Transform::identity(),
+            None,
+        );
     }
 }
 

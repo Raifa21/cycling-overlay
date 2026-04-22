@@ -616,6 +616,176 @@ fn gauge_speed_fill_matches_golden() {
     assert_golden(&pix, "gauge_speed_fill.png");
 }
 
+#[test]
+fn gauge_speed_classic_matches_golden() {
+    use activity::{Activity, Sample};
+    use chrono::{TimeZone, Utc};
+    use layout::{
+        Canvas, DistanceUnit, ElevationUnit, Layout, Rect, SpeedUnit, TempUnit, Theme, Units,
+        Widget,
+    };
+    use render::{render_frame, TextCtx};
+    use std::time::Duration;
+    use tiny_skia::{Color, Pixmap};
+
+    let layout = Layout {
+        version: 1,
+        canvas: Canvas {
+            width: 400,
+            height: 400,
+            fps: 30,
+        },
+        units: Units {
+            speed: SpeedUnit::Kmh,
+            distance: DistanceUnit::Km,
+            elevation: ElevationUnit::M,
+            temp: TempUnit::C,
+        },
+        theme: Theme {
+            font: "Inter".into(),
+            fg: "#ffffff".into(),
+            accent: "#ffcc00".into(),
+            shadow: None,
+        },
+        rider: None,
+        widgets: vec![Widget::Gauge {
+            id: "spd".into(),
+            metric: "speed".into(),
+            rect: Rect {
+                x: 20,
+                y: 20,
+                w: 360,
+                h: 360,
+            },
+            min: 0.0,
+            max: 60.0,
+            start_deg: -135.0,
+            end_deg: 135.0,
+            indicator: layout::Indicator {
+                kind: layout::IndicatorKind::Needle,
+                fill_under: true,
+            },
+            ticks: layout::Ticks::default(),
+            show_value: true,
+            value_font_size: None,
+        }],
+    };
+
+    let sample = Sample {
+        t: Duration::ZERO,
+        lat: 0.0,
+        lon: 0.0,
+        altitude_m: None,
+        speed_mps: Some(40.0 / 3.6),
+        heart_rate_bpm: None,
+        cadence_rpm: None,
+        power_w: None,
+        distance_m: None,
+        elev_gain_cum_m: None,
+        gradient_pct: None,
+    };
+    let activity = Activity::from_samples(Utc.timestamp_opt(0, 0).unwrap(), vec![sample]);
+
+    let mut ctx = TextCtx::new();
+    let mut pix = Pixmap::new(400, 400).unwrap();
+    render_frame(
+        &layout,
+        &activity,
+        Duration::ZERO,
+        &mut ctx,
+        &mut pix,
+        Color::TRANSPARENT,
+    )
+    .unwrap();
+
+    assert_golden(&pix, "gauge_speed_classic.png");
+}
+
+#[test]
+fn gauge_power_arrow_matches_golden() {
+    use activity::{Activity, Sample};
+    use chrono::{TimeZone, Utc};
+    use layout::{
+        Canvas, DistanceUnit, ElevationUnit, Layout, Rect, SpeedUnit, TempUnit, Theme, Units,
+        Widget,
+    };
+    use render::{render_frame, TextCtx};
+    use std::time::Duration;
+    use tiny_skia::{Color, Pixmap};
+
+    let layout = Layout {
+        version: 1,
+        canvas: Canvas {
+            width: 400,
+            height: 400,
+            fps: 30,
+        },
+        units: Units {
+            speed: SpeedUnit::Kmh,
+            distance: DistanceUnit::Km,
+            elevation: ElevationUnit::M,
+            temp: TempUnit::C,
+        },
+        theme: Theme {
+            font: "Inter".into(),
+            fg: "#ffffff".into(),
+            accent: "#ffcc00".into(),
+            shadow: None,
+        },
+        rider: None,
+        widgets: vec![Widget::Gauge {
+            id: "pwr".into(),
+            metric: "power".into(),
+            rect: Rect {
+                x: 20,
+                y: 20,
+                w: 360,
+                h: 360,
+            },
+            min: 0.0,
+            max: 500.0,
+            start_deg: -180.0,
+            end_deg: 180.0,
+            indicator: layout::Indicator {
+                kind: layout::IndicatorKind::Arrow,
+                fill_under: false,
+            },
+            ticks: layout::Ticks::default(),
+            show_value: true,
+            value_font_size: None,
+        }],
+    };
+
+    let sample = Sample {
+        t: Duration::ZERO,
+        lat: 0.0,
+        lon: 0.0,
+        altitude_m: None,
+        speed_mps: None,
+        heart_rate_bpm: None,
+        cadence_rpm: None,
+        power_w: Some(250),
+        distance_m: None,
+        elev_gain_cum_m: None,
+        gradient_pct: None,
+    };
+    let activity = Activity::from_samples(Utc.timestamp_opt(0, 0).unwrap(), vec![sample]);
+
+    let mut ctx = TextCtx::new();
+    let mut pix = Pixmap::new(400, 400).unwrap();
+    render_frame(
+        &layout,
+        &activity,
+        Duration::ZERO,
+        &mut ctx,
+        &mut pix,
+        Color::TRANSPARENT,
+    )
+    .unwrap();
+
+    assert_golden(&pix, "gauge_power_arrow.png");
+}
+
 fn assert_golden(pix: &Pixmap, name: &str) {
     let golden_path = Path::new("tests/golden").join(name);
     let actual_img: RgbaImage = RgbaImage::from_raw(pix.width(), pix.height(), pix.data().to_vec())
