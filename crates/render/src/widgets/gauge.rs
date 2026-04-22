@@ -219,16 +219,8 @@ pub fn render_gauge(
                     draw_triangle(pixmap, apex, base_a, base_b, fg);
                 }
                 IndicatorKind::Needle => {
-                    // Thin line from inner edge of track to a small
-                    // overshoot past the outer edge.
-                    let r_inner = r_outer - thickness;
-                    let r_tip = r_outer + thickness * 0.3;
-                    let p1 = (cx + r_inner * outward.0, cy + r_inner * outward.1);
-                    let p2 = (cx + r_tip * outward.0, cy + r_tip * outward.1);
-                    draw_line(pixmap, p1.0, p1.1, p2.0, p2.1, fg, 2.5);
-
-                    // Hub: small filled circle at the pivot. Draw BEFORE
-                    // show_value so the text reads cleanly over it.
+                    // Hub first so the needle line draws on top of it — the
+                    // needle then visually anchors at the hub's center.
                     let hub_r = thickness * 0.4;
                     let mut pb = PathBuilder::new();
                     pb.push_circle(cx, cy, hub_r);
@@ -244,13 +236,21 @@ pub fn render_gauge(
                             None,
                         );
                     }
+
+                    // Needle runs from the hub center out past the outer edge
+                    // of the track (classic speedometer look).
+                    let r_tip = r_outer + thickness * 0.3;
+                    let tip = (cx + r_tip * outward.0, cy + r_tip * outward.1);
+                    draw_line(pixmap, cx, cy, tip.0, tip.1, fg, 2.5);
                 }
             }
         }
     }
 
-    // show_value: centered at (cx, cy). Unit suffix appended (e.g. "40.0
-    // km/h"). "--" placeholder when the metric has no value on this sample.
+    // show_value: center-aligned horizontally. When the indicator is a
+    // Needle, the hub occupies the center, so the label drops below it;
+    // otherwise it sits centered at (cx, cy). Unit suffix appended
+    // (e.g. "40.0 km/h"). "--" placeholder when the metric is missing.
     if show_value {
         let font_size = value_font_size.unwrap_or((rect.w.min(rect.h) as f32) * 0.15);
         let suffix = unit_suffix(metric, units);
@@ -265,11 +265,16 @@ pub fn render_gauge(
             None => "--".to_string(),
         };
         let text_w = text_ctx.measure_width(&text, font_size);
-        // cosmic-text positions glyphs from the top of the layout box;
-        // pull up by ~35% of font size so the visible glyph mass centers
-        // on (cx, cy).
         let draw_x = cx - text_w * 0.5;
-        let draw_y = cy - font_size * 0.35;
+        // cosmic-text positions glyphs from the top of the layout box.
+        let draw_y = match indicator.kind {
+            IndicatorKind::Needle => {
+                // Top of text sits just below the hub with a small gap.
+                let hub_r = thickness * 0.4;
+                cy + hub_r + 4.0
+            }
+            _ => cy - font_size * 0.35,
+        };
         text_ctx.draw(pixmap, &text, draw_x, draw_y, font_size, fg);
     }
 }
