@@ -67,8 +67,19 @@ pub fn render_readout(
     let max_unit_col_left = rect.x as f32 + rect.w as f32 - unit_w - RIGHT_PAD;
     let unit_col_left = default_unit_col_left.min(max_unit_col_left);
 
+    // Number's right edge: just left of the unit (with gap) when a unit is
+    // present; at the rect's right edge otherwise. Without this, unit-less
+    // metrics like elapsed time right-align to the 70% column and the
+    // empty right-third of the rect lets a wide value bleed past the
+    // rect's left edge into the neighboring readout.
+    let num_right = if unit_str.is_empty() {
+        rect.x as f32 + rect.w as f32 - RIGHT_PAD
+    } else {
+        unit_col_left - gap
+    };
+
     let num_w = text_ctx.measure_width_numeric(&value_str, font_size);
-    let num_x = unit_col_left - gap - num_w;
+    let num_x = num_right - num_w;
     text_ctx.draw_numeric(pixmap, &value_str, num_x, value_y, font_size, fg);
     if !unit_str.is_empty() {
         // Baseline-align the unit to the number. cosmic-text draws with `y`
