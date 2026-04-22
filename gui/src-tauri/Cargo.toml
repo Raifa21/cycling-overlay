@@ -1,0 +1,25 @@
+[package]
+name = "gpx-overlay-gui"
+version = "0.1.0"
+edition = "2021"
+description = "Desktop GUI for gpx-overlay"
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+tauri = { version = "2", features = [] }
+tauri-plugin-dialog = "2"
+serde = { workspace = true }
+serde_json = { workspace = true }
+anyhow = { workspace = true }
+thiserror = { workspace = true }
+tokio = { version = "1", features = ["full"] }
+notify = "6"
+activity = { path = "../../crates/activity" }
+layout = { path = "../../crates/layout" }
+render = { path = "../../crates/render" }
+
+[features]
+default = ["custom-protocol"]
+custom-protocol = ["tauri/custom-protocol"]
