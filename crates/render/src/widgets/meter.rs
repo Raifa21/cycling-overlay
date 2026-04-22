@@ -359,13 +359,7 @@ fn draw_tick(
     }
 }
 
-fn draw_triangle(
-    pixmap: &mut Pixmap,
-    a: (f32, f32),
-    b: (f32, f32),
-    c: (f32, f32),
-    color: Color,
-) {
+fn draw_triangle(pixmap: &mut Pixmap, a: (f32, f32), b: (f32, f32), c: (f32, f32), color: Color) {
     let mut pb = PathBuilder::new();
     pb.move_to(a.0, a.1);
     pb.line_to(b.0, b.1);

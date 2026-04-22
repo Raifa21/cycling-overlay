@@ -245,20 +245,33 @@ fn meter_speed_fill_matches_golden() {
 
     let layout = Layout {
         version: 1,
-        canvas: Canvas { width: 600, height: 80, fps: 30 },
+        canvas: Canvas {
+            width: 600,
+            height: 80,
+            fps: 30,
+        },
         units: Units {
-            speed: SpeedUnit::Kmh, distance: DistanceUnit::Km,
-            elevation: ElevationUnit::M, temp: TempUnit::C,
+            speed: SpeedUnit::Kmh,
+            distance: DistanceUnit::Km,
+            elevation: ElevationUnit::M,
+            temp: TempUnit::C,
         },
         theme: Theme {
-            font: "Inter".into(), fg: "#ffffff".into(),
-            accent: "#ffcc00".into(), shadow: None,
+            font: "Inter".into(),
+            fg: "#ffffff".into(),
+            accent: "#ffcc00".into(),
+            shadow: None,
         },
         rider: None,
         widgets: vec![Widget::Meter {
             id: "spd".into(),
             metric: "speed".into(),
-            rect: Rect { x: 20, y: 20, w: 560, h: 40 },
+            rect: Rect {
+                x: 20,
+                y: 20,
+                w: 560,
+                h: 40,
+            },
             min: 0.0,
             max: 60.0,
             orientation: layout::Orientation::Horizontal,
@@ -270,17 +283,31 @@ fn meter_speed_fill_matches_golden() {
     };
 
     let sample = Sample {
-        t: Duration::ZERO, lat: 0.0, lon: 0.0,
+        t: Duration::ZERO,
+        lat: 0.0,
+        lon: 0.0,
         altitude_m: None,
         speed_mps: Some(30.0 / 3.6), // 30 km/h = 50% of max
-        heart_rate_bpm: None, cadence_rpm: None, power_w: None,
-        distance_m: None, elev_gain_cum_m: None, gradient_pct: None,
+        heart_rate_bpm: None,
+        cadence_rpm: None,
+        power_w: None,
+        distance_m: None,
+        elev_gain_cum_m: None,
+        gradient_pct: None,
     };
     let activity = Activity::from_samples(Utc.timestamp_opt(0, 0).unwrap(), vec![sample]);
 
     let mut ctx = TextCtx::new();
     let mut pix = Pixmap::new(600, 80).unwrap();
-    render_frame(&layout, &activity, Duration::ZERO, &mut ctx, &mut pix, Color::TRANSPARENT).unwrap();
+    render_frame(
+        &layout,
+        &activity,
+        Duration::ZERO,
+        &mut ctx,
+        &mut pix,
+        Color::TRANSPARENT,
+    )
+    .unwrap();
 
     assert_golden(&pix, "meter_speed_fill.png");
 }

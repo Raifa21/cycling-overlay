@@ -127,7 +127,9 @@ mod tests {
         let normalized = mid.rem_euclid(360.0);
         assert!(
             normalized < 1e-4 || (normalized - 360.0).abs() < 1e-4,
-            "got {} (normalized {})", mid, normalized
+            "got {} (normalized {})",
+            mid,
+            normalized
         );
     }
 

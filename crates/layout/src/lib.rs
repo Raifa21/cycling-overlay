@@ -374,7 +374,13 @@ mod tests {
         }"#;
         let w: Widget = serde_json::from_str(json).unwrap();
         match w {
-            Widget::Meter { metric, min, max, orientation, .. } => {
+            Widget::Meter {
+                metric,
+                min,
+                max,
+                orientation,
+                ..
+            } => {
                 assert_eq!(metric, "speed");
                 assert_eq!(min, 0.0);
                 assert_eq!(max, 60.0);
@@ -396,7 +402,9 @@ mod tests {
         }"#;
         let w: Widget = serde_json::from_str(json).unwrap();
         match w {
-            Widget::Gauge { start_deg, end_deg, .. } => {
+            Widget::Gauge {
+                start_deg, end_deg, ..
+            } => {
                 assert_eq!(start_deg, -135.0);
                 assert_eq!(end_deg, 135.0);
             }

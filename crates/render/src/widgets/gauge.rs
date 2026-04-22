@@ -167,10 +167,7 @@ pub fn render_gauge(
                     // tangent to the arc. tw = half-width along tangent,
                     // th = half-height along outward (overhangs the track).
                     let center_rad = r_outer - thickness * 0.5;
-                    let center = (
-                        cx + center_rad * outward.0,
-                        cy + center_rad * outward.1,
-                    );
+                    let center = (cx + center_rad * outward.0, cy + center_rad * outward.1);
                     let tw = thickness * 0.125;
                     let th = thickness * 0.55;
                     let half_tan = (tangent.0 * tw, tangent.1 * tw);
@@ -199,8 +196,7 @@ pub fn render_gauge(
                     // the arrow from overlapping the tick numbers that sit
                     // just past the major-tick outer end.
                     let major_len = thickness * MAJOR_TICK_LEN_RATIO;
-                    let number_font_size =
-                        (thickness * 0.8).clamp(NUMBER_FONT_SIZE_MIN, 20.0);
+                    let number_font_size = (thickness * 0.8).clamp(NUMBER_FONT_SIZE_MIN, 20.0);
                     // Apex sits past major-tick outer end + number gap +
                     // rough number height so we clear tick labels.
                     let apex_rad = if ticks.show_numbers {
@@ -211,8 +207,7 @@ pub fn render_gauge(
                     let base_rad = apex_rad + thickness * 0.8;
                     let half_base = thickness * 0.35;
                     let apex = (cx + apex_rad * outward.0, cy + apex_rad * outward.1);
-                    let base_mid =
-                        (cx + base_rad * outward.0, cy + base_rad * outward.1);
+                    let base_mid = (cx + base_rad * outward.0, cy + base_rad * outward.1);
                     let base_a = (
                         base_mid.0 - tangent.0 * half_base,
                         base_mid.1 - tangent.1 * half_base,
@@ -257,8 +252,7 @@ pub fn render_gauge(
     // show_value: centered at (cx, cy). Unit suffix appended (e.g. "40.0
     // km/h"). "--" placeholder when the metric has no value on this sample.
     if show_value {
-        let font_size =
-            value_font_size.unwrap_or((rect.w.min(rect.h) as f32) * 0.15);
+        let font_size = value_font_size.unwrap_or((rect.w.min(rect.h) as f32) * 0.15);
         let suffix = unit_suffix(metric, units);
         let text = match current {
             Some(v) => {
