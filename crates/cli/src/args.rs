@@ -122,40 +122,43 @@ pub fn parse_time_spec(s: &str) -> Result<Duration, String> {
     let parts: Vec<&str> = s.split(':').collect();
     match parts.len() {
         1 => {
-            let secs: u64 = parts[0]
+            let secs: f64 = parts[0]
                 .parse()
-                .map_err(|e| format!("invalid seconds: {}", e))?;
-            Ok(Duration::from_secs(secs))
+                .map_err(|e: std::num::ParseFloatError| format!("invalid seconds: {}", e))?;
+            if secs < 0.0 || !secs.is_finite() {
+                return Err(format!("seconds out of range: {}", secs));
+            }
+            Ok(Duration::from_secs_f64(secs))
         }
         2 => {
             let m: u64 = parts[0]
                 .parse()
-                .map_err(|e| format!("invalid minutes: {}", e))?;
-            let s: u64 = parts[1]
+                .map_err(|e: std::num::ParseIntError| format!("invalid minutes: {}", e))?;
+            let s: f64 = parts[1]
                 .parse()
-                .map_err(|e| format!("invalid seconds: {}", e))?;
-            if s >= 60 {
+                .map_err(|e: std::num::ParseFloatError| format!("invalid seconds: {}", e))?;
+            if s < 0.0 || s >= 60.0 || !s.is_finite() {
                 return Err(format!("seconds out of range: {}", s));
             }
-            Ok(Duration::from_secs(m * 60 + s))
+            Ok(Duration::from_secs_f64(m as f64 * 60.0 + s))
         }
         3 => {
             let h: u64 = parts[0]
                 .parse()
-                .map_err(|e| format!("invalid hours: {}", e))?;
+                .map_err(|e: std::num::ParseIntError| format!("invalid hours: {}", e))?;
             let m: u64 = parts[1]
                 .parse()
-                .map_err(|e| format!("invalid minutes: {}", e))?;
-            let sec: u64 = parts[2]
+                .map_err(|e: std::num::ParseIntError| format!("invalid minutes: {}", e))?;
+            let sec: f64 = parts[2]
                 .parse()
-                .map_err(|e| format!("invalid seconds: {}", e))?;
+                .map_err(|e: std::num::ParseFloatError| format!("invalid seconds: {}", e))?;
             if m >= 60 {
                 return Err(format!("minutes out of range: {}", m));
             }
-            if sec >= 60 {
+            if sec < 0.0 || sec >= 60.0 || !sec.is_finite() {
                 return Err(format!("seconds out of range: {}", sec));
             }
-            Ok(Duration::from_secs(h * 3600 + m * 60 + sec))
+            Ok(Duration::from_secs_f64(h as f64 * 3600.0 + m as f64 * 60.0 + sec))
         }
         _ => Err(format!("expected HH:MM:SS, MM:SS, or seconds; got '{}'", s)),
     }
@@ -209,6 +212,22 @@ mod tests {
         assert!(parse_time_spec("abc").is_err());
         assert!(parse_time_spec("1:2:3:4").is_err());
         assert!(parse_time_spec("1:90").is_err()); // seconds out of range
+    }
+
+    #[test]
+    fn time_spec_fractional_seconds() {
+        assert_eq!(
+            parse_time_spec("90.5").unwrap(),
+            Duration::from_secs_f64(90.5)
+        );
+        assert_eq!(
+            parse_time_spec("1:30.250").unwrap(),
+            Duration::from_secs_f64(90.25)
+        );
+        assert_eq!(
+            parse_time_spec("1:02:03.5").unwrap(),
+            Duration::from_secs_f64(3723.5)
+        );
     }
 
     #[test]

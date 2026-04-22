@@ -55,8 +55,17 @@ impl Default for ExportHandle {
 }
 
 fn fmt_time(secs: f64) -> String {
-    let s = secs.max(0.0) as u64;
-    format!("{:02}:{:02}:{:02}", s / 3600, (s / 60) % 60, s % 60)
+    let s = secs.max(0.0);
+    let h = (s / 3600.0) as u64;
+    let m = ((s % 3600.0) / 60.0) as u64;
+    let sec = s - (h as f64) * 3600.0 - (m as f64) * 60.0;
+    // Keep 3 decimals when there's a fractional component; use integer
+    // format when clean, for readability.
+    if sec.fract().abs() < 1e-6 {
+        format!("{:02}:{:02}:{:02}", h, m, sec as u64)
+    } else {
+        format!("{:02}:{:02}:{:06.3}", h, m, sec)
+    }
 }
 
 /// Spawn the CLI. Returns immediately; progress events stream via `emit`.
@@ -192,4 +201,27 @@ pub fn cancel_export(app: AppHandle) -> Result<(), String> {
         );
     }
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::fmt_time;
+
+    #[test]
+    fn whole_seconds_no_decimals() {
+        assert_eq!(fmt_time(0.0), "00:00:00");
+        assert_eq!(fmt_time(65.0), "00:01:05");
+        assert_eq!(fmt_time(3661.0), "01:01:01");
+    }
+
+    #[test]
+    fn fractional_seconds_preserved() {
+        assert_eq!(fmt_time(3.7), "00:00:03.700");
+        assert_eq!(fmt_time(65.25), "00:01:05.250");
+    }
+
+    #[test]
+    fn negative_clamped() {
+        assert_eq!(fmt_time(-1.0), "00:00:00");
+    }
 }
