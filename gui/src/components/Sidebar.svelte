@@ -7,6 +7,8 @@
     previewT,
     previewImage,
     exportStatus,
+    exportProgress,
+    exportLog,
   } from "../lib/stores";
   import {
     loadActivity,
@@ -92,6 +94,8 @@
     }
     try {
       const cliPath = await probeCli($session.cli_path_override ?? undefined);
+      exportProgress.set(null);
+      exportLog.set([]);
       exportStatus.set("running");
       await startExport({
         cli_path: cliPath,
