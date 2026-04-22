@@ -1531,6 +1531,7 @@ version = "0.1.0"
 dependencies = [
  "activity",
  "anyhow",
+ "base64 0.22.1",
  "layout",
  "notify",
  "render",
@@ -1541,6 +1542,7 @@ dependencies = [
  "tauri-plugin-dialog",
  "tempfile",
  "thiserror 1.0.69",
+ "tiny-skia",
  "tokio",
  "which",
 ]
