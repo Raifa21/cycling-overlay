@@ -17,6 +17,7 @@
     probeCli,
   } from "../lib/tauri";
   import CodecSelect from "./CodecSelect.svelte";
+  import { ffmpegMissing, cliMissing } from "../lib/runtime-stores";
 
   async function pickInput() {
     const path = await open({
@@ -169,7 +170,9 @@
       || !$session.input_path
       || !$session.layout_path
       || !$session.output_path
-      || $session.to_seconds == null}
+      || $session.to_seconds == null
+      || $ffmpegMissing
+      || $cliMissing}
   >
     {$exportStatus === "running" ? "Exporting…" : "Export"}
   </button>
