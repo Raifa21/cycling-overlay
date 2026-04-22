@@ -160,6 +160,19 @@ pub fn render_meter(
                 );
             }
         }
+
+        // Unit label — identifies what the scale measures. Drawn once per
+        // widget in the top-right corner of the rect in the same font size
+        // as the tick numbers.
+        if ticks.show_numbers {
+            let suffix = unit_suffix(metric, units);
+            if !suffix.is_empty() {
+                let text_w = text_ctx.measure_width(suffix, number_font_size);
+                let x = rect.x as f32 + rect.w as f32 - text_w - 4.0;
+                let y = rect.y as f32 + 4.0;
+                text_ctx.draw(pixmap, suffix, x, y, number_font_size, fg);
+            }
+        }
     }
 
     // Non-Fill markers (Rect / Arrow / Needle). We draw these after the

@@ -12,7 +12,7 @@ use crate::widgets::scale::{angle_lerp, frac, nice_major_interval, tick_values, 
 const MAJOR_TICK_LEN_RATIO: f32 = 0.6; // relative to `thickness`
 const MINOR_TICK_LEN_RATIO: f32 = 0.3;
 const NUMBER_FONT_SIZE_MIN: f32 = 12.0;
-const NUMBER_GAP: f32 = 4.0; // pixels between tick outer end and number
+const NUMBER_GAP: f32 = 10.0; // pixels between tick outer end and number's inner edge
 
 /// Render a radial gauge widget.
 ///
@@ -127,7 +127,11 @@ pub fn render_gauge(
                 // Place the number just outside the tick, roughly centered
                 // on the tick's outer endpoint. Text is horizontal (not
                 // rotated to follow the arc) — rotation is deferred polish.
-                let r_label = r_tick_inner + major_len + NUMBER_GAP;
+                // Place the label's *center* radially so its inner edge
+                // clears the tick outer end by NUMBER_GAP. The text is
+                // rendered horizontally, so its inner edge relative to the
+                // radial direction is roughly half its font size away.
+                let r_label = r_tick_inner + major_len + NUMBER_GAP + number_font_size * 0.5;
                 let cx_label = cx + r_label * cos;
                 let cy_label = cy - r_label * sin;
 
@@ -141,6 +145,19 @@ pub fn render_gauge(
                 let draw_x = cx_label - text_w * 0.5;
                 let draw_y = cy_label - baseline_adjust + number_font_size * 0.5;
                 text_ctx.draw(pixmap, &text, draw_x, draw_y, number_font_size, fg);
+            }
+        }
+
+        // Unit label — tells the viewer what the scale represents. Drawn
+        // once per widget in the top-right corner of the rect, in the same
+        // font size as the tick numbers.
+        if ticks.show_numbers {
+            let suffix = unit_suffix(metric, units);
+            if !suffix.is_empty() {
+                let text_w = text_ctx.measure_width(suffix, number_font_size);
+                let x = rect.x as f32 + rect.w as f32 - text_w - 4.0;
+                let y = rect.y as f32 + 4.0;
+                text_ctx.draw(pixmap, suffix, x, y, number_font_size, fg);
             }
         }
     }
@@ -191,21 +208,14 @@ pub fn render_gauge(
                     fill_quad(pixmap, c1, c2, c3, c4, fg);
                 }
                 IndicatorKind::Arrow => {
-                    // Triangle sitting outside the ticks, apex on the outer
-                    // edge of the tick row, base further out. This keeps
-                    // the arrow from overlapping the tick numbers that sit
-                    // just past the major-tick outer end.
-                    let major_len = thickness * MAJOR_TICK_LEN_RATIO;
-                    let number_font_size = (thickness * 0.8).clamp(NUMBER_FONT_SIZE_MIN, 20.0);
-                    // Apex sits past major-tick outer end + number gap +
-                    // rough number height so we clear tick labels.
-                    let apex_rad = if ticks.show_numbers {
-                        r_outer + major_len + NUMBER_GAP + number_font_size + 4.0
-                    } else {
-                        r_outer + major_len + 4.0
-                    };
-                    let base_rad = apex_rad + thickness * 0.8;
-                    let half_base = thickness * 0.35;
+                    // Small triangle sitting just outside the track with its
+                    // apex pointing radially inward at the current value.
+                    // The arrow is intentionally close to the gauge — it may
+                    // overlap one tick number at the current angle but reads
+                    // as a clear pointer rather than floating far away.
+                    let apex_rad = r_outer + 2.0;
+                    let base_rad = apex_rad + thickness * 0.6;
+                    let half_base = thickness * 0.3;
                     let apex = (cx + apex_rad * outward.0, cy + apex_rad * outward.1);
                     let base_mid = (cx + base_rad * outward.0, cy + base_rad * outward.1);
                     let base_a = (
