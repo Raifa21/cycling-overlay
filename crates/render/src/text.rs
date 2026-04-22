@@ -6,10 +6,15 @@
 //! rasterization, and source-over compositing without each widget needing to
 //! touch cosmic-text internals.
 //!
-//! Only the bundled Inter font is loaded — system fonts are deliberately
-//! skipped so rendering is deterministic across machines (important for test
-//! stability and for producing the same output on a CI runner as on a dev
-//! box).
+//! Two bundled fonts are loaded — system fonts are deliberately skipped so
+//! rendering is deterministic across machines (important for test stability
+//! and for producing the same output on a CI runner as on a dev box).
+//!
+//! - **Inter** is the default UI font, used for labels and prose.
+//! - **Roboto** is used for numeric text (tick numbers, metric values, unit
+//!   suffixes on the same line as numbers). Roboto's numerals have slightly
+//!   more uniform widths at variable-weight defaults than Inter, reading as
+//!   cleaner in a scale gauge.
 
 use cosmic_text::{
     Attrs, Buffer, Color as CtColor, Family, FontSystem, Metrics, Shaping, SwashCache,
@@ -19,6 +24,25 @@ use tiny_skia::{Color, Pixmap};
 /// Bundled copy of Inter — baked into the binary so the render crate has no
 /// runtime font dependency.
 const INTER_VARIABLE_FONT: &[u8] = include_bytes!("../assets/Inter-VariableFont.ttf");
+
+/// Bundled copy of Roboto — used for numeric text.
+const ROBOTO_VARIABLE_FONT: &[u8] = include_bytes!("../assets/Roboto-VariableFont.ttf");
+
+/// Internal font selector for the draw/measure helpers.
+#[derive(Debug, Clone, Copy)]
+enum FontFamily {
+    Inter,
+    Roboto,
+}
+
+impl FontFamily {
+    fn name(self) -> &'static str {
+        match self {
+            FontFamily::Inter => "Inter",
+            FontFamily::Roboto => "Roboto",
+        }
+    }
+}
 
 /// Owns the cosmic-text `FontSystem` + glyph cache.
 ///
@@ -37,10 +61,11 @@ impl Default for TextCtx {
 }
 
 impl TextCtx {
-    /// Build a `TextCtx` with only the bundled Inter font loaded.
+    /// Build a `TextCtx` with the bundled Inter + Roboto fonts loaded.
     pub fn new() -> Self {
         let mut db = cosmic_text::fontdb::Database::new();
         db.load_font_data(INTER_VARIABLE_FONT.to_vec());
+        db.load_font_data(ROBOTO_VARIABLE_FONT.to_vec());
         let font_system = FontSystem::new_with_locale_and_db("en-US".into(), db);
         Self {
             font_system,
@@ -48,23 +73,28 @@ impl TextCtx {
         }
     }
 
-    /// Measure the rendered pixel width of `text` at `font_size`, shaped with
-    /// the same font and features as `draw`.
-    ///
-    /// Intended for right-aligning values whose character widths differ
-    /// between frames (e.g., "9.2" vs "10.5") so the unit glyph to the right
-    /// of the number doesn't jitter.
+    /// Measure the rendered pixel width of `text` at `font_size` using the
+    /// UI font (Inter).
     pub fn measure_width(&mut self, text: &str, font_size: f32) -> f32 {
+        self.measure_width_family(text, font_size, FontFamily::Inter)
+    }
+
+    /// Measure numeric text using the Roboto font. Use for tick numbers,
+    /// metric values, and unit suffixes that sit on the same baseline as
+    /// numbers.
+    pub fn measure_width_numeric(&mut self, text: &str, font_size: f32) -> f32 {
+        self.measure_width_family(text, font_size, FontFamily::Roboto)
+    }
+
+    fn measure_width_family(&mut self, text: &str, font_size: f32, family: FontFamily) -> f32 {
         let metrics = Metrics::new(font_size, font_size * 1.2);
         let mut buffer = Buffer::new(&mut self.font_system, metrics);
         {
             let mut bw = buffer.borrow_with(&mut self.font_system);
-            // Very wide box so shaping never wraps; we just want the natural
-            // line width back.
             bw.set_size(Some(f32::INFINITY), Some(f32::INFINITY));
             bw.set_text(
                 text,
-                Attrs::new().family(Family::Name("Inter")),
+                Attrs::new().family(Family::Name(family.name())),
                 Shaping::Advanced,
             );
             bw.shape_until_scroll(true);
@@ -76,10 +106,8 @@ impl TextCtx {
     }
 
     /// Draw `text` onto `pixmap` with its layout box anchored at `(x, y)`
-    /// (top-left), at `font_size` pixels, composited in `color`.
-    ///
-    /// Uses source-over compositing against whatever is already in the
-    /// pixmap. Coordinates outside the pixmap are clipped.
+    /// (top-left), at `font_size` pixels, composited in `color`. Uses the
+    /// UI font (Inter).
     pub fn draw(
         &mut self,
         pixmap: &mut Pixmap,
@@ -89,15 +117,42 @@ impl TextCtx {
         font_size: f32,
         color: Color,
     ) {
+        self.draw_family(pixmap, text, x, y, font_size, color, FontFamily::Inter);
+    }
+
+    /// Draw numeric text using the Roboto font. Use for tick numbers, metric
+    /// values, and unit suffixes adjacent to numbers.
+    pub fn draw_numeric(
+        &mut self,
+        pixmap: &mut Pixmap,
+        text: &str,
+        x: f32,
+        y: f32,
+        font_size: f32,
+        color: Color,
+    ) {
+        self.draw_family(pixmap, text, x, y, font_size, color, FontFamily::Roboto);
+    }
+
+    #[allow(clippy::too_many_arguments)]
+    fn draw_family(
+        &mut self,
+        pixmap: &mut Pixmap,
+        text: &str,
+        x: f32,
+        y: f32,
+        font_size: f32,
+        color: Color,
+        family: FontFamily,
+    ) {
         let metrics = Metrics::new(font_size, font_size * 1.2);
         let mut buffer = Buffer::new(&mut self.font_system, metrics);
         {
             let mut bw = buffer.borrow_with(&mut self.font_system);
-            // Size the layout box so text doesn't silently wrap to zero width.
             bw.set_size(Some(pixmap.width() as f32), Some(pixmap.height() as f32));
             bw.set_text(
                 text,
-                Attrs::new().family(Family::Name("Inter")),
+                Attrs::new().family(Family::Name(family.name())),
                 Shaping::Advanced,
             );
             bw.shape_until_scroll(true);

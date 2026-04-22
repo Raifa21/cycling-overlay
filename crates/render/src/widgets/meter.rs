@@ -169,7 +169,7 @@ pub fn render_meter(
             let suffix = unit_suffix(metric, units);
             if !suffix.is_empty() {
                 let max_label = format!("{:.*}", ticks.decimals as usize, max);
-                let max_label_w = text_ctx.measure_width(&max_label, number_font_size);
+                let max_label_w = text_ctx.measure_width_numeric(&max_label, number_font_size);
                 const TICK_GAP: f32 = 4.0; // matches draw_tick_number
                 const UNIT_GAP: f32 = 6.0;
                 match orientation {
@@ -180,7 +180,7 @@ pub fn render_meter(
                         let number_right = track_x + track_w + max_label_w * 0.5;
                         let x = number_right + UNIT_GAP;
                         let y = track_y + track_h + major_len + TICK_GAP;
-                        text_ctx.draw(pixmap, suffix, x, y, number_font_size, fg);
+                        text_ctx.draw_numeric(pixmap, suffix, x, y, number_font_size, fg);
                     }
                     Orientation::Vertical => {
                         // Max tick sits at the top; its number is
@@ -189,7 +189,7 @@ pub fn render_meter(
                         let number_left = track_x + track_w + major_len + TICK_GAP;
                         let x = number_left + max_label_w + UNIT_GAP;
                         let y = track_y - number_font_size * 0.5;
-                        text_ctx.draw(pixmap, suffix, x, y, number_font_size, fg);
+                        text_ctx.draw_numeric(pixmap, suffix, x, y, number_font_size, fg);
                     }
                 }
             }
@@ -304,23 +304,23 @@ pub fn render_meter(
         match orientation {
             Orientation::Horizontal => {
                 let font_size = value_font_size.unwrap_or(rect.h as f32 * 0.2);
-                let w = text_ctx.measure_width(&text, font_size);
+                let w = text_ctx.measure_width_numeric(&text, font_size);
                 let x = rect.x as f32 + (rect.w as f32 - w) * 0.5;
                 // Sit the label above the track band. TextCtx::draw's `y` is
                 // the top of the layout box; place the top so the baseline
                 // lands a small gap above the track top.
                 let y = track_y - font_size * 1.05;
-                text_ctx.draw(pixmap, &text, x, y, font_size, fg);
+                text_ctx.draw_numeric(pixmap, &text, x, y, font_size, fg);
             }
             Orientation::Vertical => {
                 let font_size = value_font_size.unwrap_or(rect.w as f32 * 0.2);
-                let w = text_ctx.measure_width(&text, font_size);
+                let w = text_ctx.measure_width_numeric(&text, font_size);
                 // Center vertically within the rect, right-anchor against
                 // the track's left edge (a small gap keeps it off the track
                 // outline).
                 let x = track_x - 8.0 - w;
                 let y = rect.y as f32 + (rect.h as f32 - font_size) * 0.5;
-                text_ctx.draw(pixmap, &text, x, y, font_size, fg);
+                text_ctx.draw_numeric(pixmap, &text, x, y, font_size, fg);
             }
         }
     }
@@ -449,11 +449,11 @@ fn draw_tick_number(
         Orientation::Horizontal => {
             // Center number horizontally under the tick, top-anchored just
             // below the tick end.
-            let w = text_ctx.measure_width(label, font_size);
+            let w = text_ctx.measure_width_numeric(label, font_size);
             let x_center = track_x + track_w * tf;
             let x = x_center - w * 0.5;
             let y = track_y + track_h + tick_len + GAP;
-            text_ctx.draw(pixmap, label, x, y, font_size, color);
+            text_ctx.draw_numeric(pixmap, label, x, y, font_size, color);
         }
         Orientation::Vertical => {
             // Left-anchored to the right of the tick end, vertically centered
@@ -464,7 +464,7 @@ fn draw_tick_number(
             let y_line = track_y + track_h * (1.0 - tf);
             let x = track_x + track_w + tick_len + GAP;
             let y = y_line - font_size * 0.5;
-            text_ctx.draw(pixmap, label, x, y, font_size, color);
+            text_ctx.draw_numeric(pixmap, label, x, y, font_size, color);
         }
     }
 }

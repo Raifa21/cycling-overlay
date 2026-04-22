@@ -52,9 +52,9 @@ pub fn render_readout(
     let gap = font_size * 0.15;
     let unit_size = unit_font_size.unwrap_or(font_size);
 
-    let num_w = text_ctx.measure_width(&value_str, font_size);
+    let num_w = text_ctx.measure_width_numeric(&value_str, font_size);
     let num_x = unit_col_left - gap - num_w;
-    text_ctx.draw(pixmap, &value_str, num_x, value_y, font_size, fg);
+    text_ctx.draw_numeric(pixmap, &value_str, num_x, value_y, font_size, fg);
     if !unit_str.is_empty() {
         // Baseline-align the unit to the number. cosmic-text draws with `y`
         // as the top of the layout box; the baseline sits ≈0.85 * font_size
@@ -62,7 +62,7 @@ pub fn render_readout(
         // difference so the two baselines coincide.
         const BASELINE_RATIO: f32 = 0.85;
         let unit_y = value_y + (font_size - unit_size) * BASELINE_RATIO;
-        text_ctx.draw(pixmap, unit_str, unit_col_left, unit_y, unit_size, fg);
+        text_ctx.draw_numeric(pixmap, unit_str, unit_col_left, unit_y, unit_size, fg);
     }
 }
 

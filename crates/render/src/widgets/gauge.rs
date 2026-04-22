@@ -135,7 +135,7 @@ pub fn render_gauge(
                 let cx_label = cx + r_label * cos;
                 let cy_label = cy - r_label * sin;
 
-                let text_w = text_ctx.measure_width(&text, number_font_size);
+                let text_w = text_ctx.measure_width_numeric(&text, number_font_size);
                 // cosmic-text positions glyphs with the layout box's
                 // top-left at (x, y). The visible baseline sits roughly
                 // 0.85 * font_size below the top; to vertically-center the
@@ -144,7 +144,7 @@ pub fn render_gauge(
                 let baseline_adjust = number_font_size * 0.85;
                 let draw_x = cx_label - text_w * 0.5;
                 let draw_y = cy_label - baseline_adjust + number_font_size * 0.5;
-                text_ctx.draw(pixmap, &text, draw_x, draw_y, number_font_size, fg);
+                text_ctx.draw_numeric(pixmap, &text, draw_x, draw_y, number_font_size, fg);
             }
         }
 
@@ -162,7 +162,7 @@ pub fn render_gauge(
                 let cy_label = cy - r_label * sin_m;
 
                 let max_label = format!("{:.*}", ticks.decimals as usize, max);
-                let max_label_w = text_ctx.measure_width(&max_label, number_font_size);
+                let max_label_w = text_ctx.measure_width_numeric(&max_label, number_font_size);
 
                 let baseline_adjust = number_font_size * 0.85;
                 let number_draw_x = cx_label - max_label_w * 0.5;
@@ -170,7 +170,7 @@ pub fn render_gauge(
                 const UNIT_GAP: f32 = 6.0;
                 let unit_x = number_draw_x + max_label_w + UNIT_GAP;
                 let unit_y = number_draw_y;
-                text_ctx.draw(pixmap, suffix, unit_x, unit_y, number_font_size, fg);
+                text_ctx.draw_numeric(pixmap, suffix, unit_x, unit_y, number_font_size, fg);
             }
         }
     }
@@ -287,7 +287,7 @@ pub fn render_gauge(
             }
             None => "--".to_string(),
         };
-        let text_w = text_ctx.measure_width(&text, font_size);
+        let text_w = text_ctx.measure_width_numeric(&text, font_size);
         let draw_x = cx - text_w * 0.5;
         // cosmic-text positions glyphs from the top of the layout box.
         let draw_y = match indicator.kind {
@@ -298,7 +298,7 @@ pub fn render_gauge(
             }
             _ => cy - font_size * 0.35,
         };
-        text_ctx.draw(pixmap, &text, draw_x, draw_y, font_size, fg);
+        text_ctx.draw_numeric(pixmap, &text, draw_x, draw_y, font_size, fg);
     }
 }
 
