@@ -1,16 +1,7 @@
 <script lang="ts">
   import { onMount } from "svelte";
-  import {
-    exportStatus,
-    exportProgress,
-    exportLog,
-  } from "../lib/stores";
-  import {
-    onExportProgress,
-    onExportLog,
-    onExportDone,
-    cancelExport,
-  } from "../lib/tauri";
+  import { exportStatus, exportProgress, exportLog } from "../lib/stores";
+  import { onExportProgress, onExportLog, onExportDone, cancelExport } from "../lib/tauri";
   import type { UnlistenFn } from "@tauri-apps/api/event";
 
   let collapsed = true;
@@ -49,9 +40,8 @@
     ? Math.round(($exportProgress.frame / Math.max(1, $exportProgress.total)) * 100)
     : 0;
 
-  $: etaLabel = $exportProgress?.eta_seconds != null
-    ? `${Math.round($exportProgress.eta_seconds)}s`
-    : "—";
+  $: etaLabel =
+    $exportProgress?.eta_seconds != null ? `${Math.round($exportProgress.eta_seconds)}s` : "—";
 
   // Stay visible through every non-idle state so an immediate failure
   // (e.g. the CLI rejecting argv before the first progress line) still
@@ -77,8 +67,7 @@
         {/if}
         {#if $exportProgress}
           {$exportProgress.frame} / {$exportProgress.total}
-          · {$exportProgress.fps.toFixed(1)} fps
-          · ETA {etaLabel}
+          · {$exportProgress.fps.toFixed(1)} fps · ETA {etaLabel}
           · {pct}%
         {:else}
           starting…
@@ -87,7 +76,7 @@
       {#if $exportStatus === "running"}
         <button class="cancel" on:click={cancelExport}>Cancel</button>
       {/if}
-      <button class="toggle" on:click={() => collapsed = !collapsed}>
+      <button class="toggle" on:click={() => (collapsed = !collapsed)}>
         {collapsed ? "Show log" : "Hide log"}
       </button>
     </div>
@@ -106,7 +95,9 @@
 </footer>
 
 <style>
-  .footer { background: #1a1a1a; }
+  .footer {
+    background: #1a1a1a;
+  }
   .top {
     display: flex;
     gap: 0.5rem;
@@ -142,17 +133,34 @@
     padding: 0.1rem 0.4rem;
     border-radius: 3px;
   }
-  .status.err    { background: #a33; color: white; }
-  .status.cancel { background: #862; color: white; }
-  .status.ok     { background: #263; color: white; }
-  .cancel {
-    background: #a33; color: white; border: 0;
-    padding: 0.3rem 0.8rem; cursor: pointer;
+  .status.err {
+    background: #a33;
+    color: white;
   }
-  .cancel:hover { background: #b44; }
+  .status.cancel {
+    background: #862;
+    color: white;
+  }
+  .status.ok {
+    background: #263;
+    color: white;
+  }
+  .cancel {
+    background: #a33;
+    color: white;
+    border: 0;
+    padding: 0.3rem 0.8rem;
+    cursor: pointer;
+  }
+  .cancel:hover {
+    background: #b44;
+  }
   .toggle {
-    background: #333; color: #ddd; border: 0;
-    padding: 0.3rem 0.8rem; cursor: pointer;
+    background: #333;
+    color: #ddd;
+    border: 0;
+    padding: 0.3rem 0.8rem;
+    cursor: pointer;
   }
   .log {
     max-height: 200px;
@@ -163,6 +171,11 @@
     background: #111;
     border-top: 1px solid #222;
   }
-  .logline { color: #aaa; white-space: pre-wrap; }
-  .muted { color: #666; }
+  .logline {
+    color: #aaa;
+    white-space: pre-wrap;
+  }
+  .muted {
+    color: #666;
+  }
 </style>

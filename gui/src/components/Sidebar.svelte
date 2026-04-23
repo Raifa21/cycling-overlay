@@ -233,13 +233,13 @@
   <button
     class="primary"
     on:click={doExport}
-    disabled={$exportStatus === "running"
-      || !$session.input_path
-      || !$session.layout_path
-      || !$session.output_path
-      || $session.to_seconds == null
-      || $ffmpegMissing
-      || $cliMissing}
+    disabled={$exportStatus === "running" ||
+      !$session.input_path ||
+      !$session.layout_path ||
+      !$session.output_path ||
+      $session.to_seconds == null ||
+      $ffmpegMissing ||
+      $cliMissing}
   >
     {$exportStatus === "running" ? "Exporting…" : "Export"}
   </button>
@@ -278,7 +278,9 @@
     cursor: pointer;
     align-self: flex-start;
   }
-  button:hover { background: #3a3a3a; }
+  button:hover {
+    background: #3a3a3a;
+  }
   .time-row {
     display: flex;
     align-items: center;
@@ -293,8 +295,12 @@
     border: 1px solid #444;
     font-family: ui-monospace, "Cascadia Code", Menlo, monospace;
   }
-  .time-row input.invalid { border-color: #a33; }
-  .time-row span { color: #888; }
+  .time-row input.invalid {
+    border-color: #a33;
+  }
+  .time-row span {
+    color: #888;
+  }
   .primary {
     margin-top: 1rem;
     padding: 0.6rem 1rem;
@@ -304,6 +310,12 @@
     cursor: pointer;
     font-weight: 600;
   }
-  .primary:hover:not(:disabled) { background: #5b7; }
-  .primary:disabled { background: #333; color: #888; cursor: not-allowed; }
+  .primary:hover:not(:disabled) {
+    background: #5b7;
+  }
+  .primary:disabled {
+    background: #333;
+    color: #888;
+    cursor: not-allowed;
+  }
 </style>

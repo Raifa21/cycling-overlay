@@ -158,7 +158,9 @@ pub fn parse_time_spec(s: &str) -> Result<Duration, String> {
             if sec < 0.0 || sec >= 60.0 || !sec.is_finite() {
                 return Err(format!("seconds out of range: {}", sec));
             }
-            Ok(Duration::from_secs_f64(h as f64 * 3600.0 + m as f64 * 60.0 + sec))
+            Ok(Duration::from_secs_f64(
+                h as f64 * 3600.0 + m as f64 * 60.0 + sec,
+            ))
         }
         _ => Err(format!("expected HH:MM:SS, MM:SS, or seconds; got '{}'", s)),
     }

@@ -40,20 +40,28 @@ mod tests {
     fn parses_progress() {
         assert_eq!(
             parse_line(r#"{"type":"progress","frame":42,"total":900}"#).unwrap(),
-            ProgressLine::Progress { frame: 42, total: 900 }
+            ProgressLine::Progress {
+                frame: 42,
+                total: 900
+            }
         );
     }
 
     #[test]
     fn parses_done() {
-        assert_eq!(parse_line(r#"{"type":"done"}"#).unwrap(), ProgressLine::Done);
+        assert_eq!(
+            parse_line(r#"{"type":"done"}"#).unwrap(),
+            ProgressLine::Done
+        );
     }
 
     #[test]
     fn parses_error() {
         assert_eq!(
             parse_line(r#"{"type":"error","message":"boom"}"#).unwrap(),
-            ProgressLine::Error { message: "boom".into() }
+            ProgressLine::Error {
+                message: "boom".into()
+            }
         );
     }
 

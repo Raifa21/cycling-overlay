@@ -20,13 +20,7 @@
     onLayoutError,
   } from "./lib/tauri";
   import { requestPreview } from "./lib/preview-dispatcher";
-  import {
-    session,
-    previewT,
-    previewImage,
-    activityInfo,
-    layoutInfo,
-  } from "./lib/stores";
+  import { session, previewT, previewImage, activityInfo, layoutInfo } from "./lib/stores";
   import { ffmpegMissing, cliMissing, loadError } from "./lib/runtime-stores";
 
   let layoutError: string | null = null;
@@ -186,8 +180,13 @@
     min-width: 0;
     min-height: 0;
   }
-  :global(.sidebar) { grid-area: sidebar; overflow-y: auto; }
-  :global(.footer)  { grid-area: footer; }
+  :global(.sidebar) {
+    grid-area: sidebar;
+    overflow-y: auto;
+  }
+  :global(.footer) {
+    grid-area: footer;
+  }
   .layout-error {
     background: #844;
     color: #ffeeee;
@@ -213,5 +212,7 @@
     cursor: pointer;
     padding: 0 0.3rem;
   }
-  .load-error .dismiss:hover { color: #eee; }
+  .load-error .dismiss:hover {
+    color: #eee;
+  }
 </style>

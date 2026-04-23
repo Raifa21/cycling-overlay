@@ -72,21 +72,27 @@ fn fmt_time(secs: f64) -> String {
 
 /// Spawn the CLI. Returns immediately; progress events stream via `emit`.
 #[tauri::command]
-pub async fn start_export(
-    app: AppHandle,
-    args: ExportArgs,
-) -> Result<(), String> {
+pub async fn start_export(app: AppHandle, args: ExportArgs) -> Result<(), String> {
     let mut cmd = Command::new(&args.cli_path);
     cmd.arg("render")
-        .arg("-i").arg(&args.input)
-        .arg("-l").arg(&args.layout)
-        .arg("-o").arg(&args.output)
-        .arg("--codec").arg(&args.codec)
-        .arg("--crf").arg(args.quality.to_string())
-        .arg("--qscale").arg(args.quality.to_string())
-        .arg("--chromakey").arg(&args.chromakey)
-        .arg("--from").arg(fmt_time(args.from_seconds))
-        .arg("--to").arg(fmt_time(args.to_seconds))
+        .arg("-i")
+        .arg(&args.input)
+        .arg("-l")
+        .arg(&args.layout)
+        .arg("-o")
+        .arg(&args.output)
+        .arg("--codec")
+        .arg(&args.codec)
+        .arg("--crf")
+        .arg(args.quality.to_string())
+        .arg("--qscale")
+        .arg(args.quality.to_string())
+        .arg("--chromakey")
+        .arg(&args.chromakey)
+        .arg("--from")
+        .arg(fmt_time(args.from_seconds))
+        .arg("--to")
+        .arg(fmt_time(args.to_seconds))
         .arg("--progress-json")
         .stdout(Stdio::null())
         .stderr(Stdio::piped());
@@ -96,8 +102,7 @@ pub async fn start_export(
     if let Some(override_path) = args.ffmpeg_path_override.as_ref() {
         if let Some(dir) = override_path.parent() {
             let existing = std::env::var_os("PATH").unwrap_or_default();
-            let mut paths: Vec<PathBuf> =
-                std::env::split_paths(&existing).collect();
+            let mut paths: Vec<PathBuf> = std::env::split_paths(&existing).collect();
             paths.insert(0, dir.to_path_buf());
             if let Ok(joined) = std::env::join_paths(paths) {
                 cmd.env("PATH", joined);
@@ -142,30 +147,48 @@ pub async fn start_export(
             match parse_line(&line) {
                 Some(ProgressLine::Progress { frame, total }) => {
                     let elapsed = started.elapsed().as_secs_f64();
-                    let fps = if elapsed > 0.0 { frame as f64 / elapsed } else { 0.0 };
+                    let fps = if elapsed > 0.0 {
+                        frame as f64 / elapsed
+                    } else {
+                        0.0
+                    };
                     let eta = eta_seconds(frame, total, elapsed);
                     let _ = app_clone.emit(
                         "export-progress",
-                        ProgressPayload { frame, total, fps, eta_seconds: eta },
+                        ProgressPayload {
+                            frame,
+                            total,
+                            fps,
+                            eta_seconds: eta,
+                        },
                     );
                 }
                 Some(ProgressLine::Done) => {
                     saw_done = true;
                     let _ = app_clone.emit(
                         "export-done",
-                        DonePayload { status: "success".into(), message: None },
+                        DonePayload {
+                            status: "success".into(),
+                            message: None,
+                        },
                     );
                 }
                 Some(ProgressLine::Error { message }) => {
                     let _ = app_clone.emit(
                         "export-done",
-                        DonePayload { status: "error".into(), message: Some(message) },
+                        DonePayload {
+                            status: "error".into(),
+                            message: Some(message),
+                        },
                     );
                 }
                 None => {
                     let _ = app_clone.emit(
                         "export-log",
-                        LogPayload { line: line.clone(), stream: "stderr" },
+                        LogPayload {
+                            line: line.clone(),
+                            stream: "stderr",
+                        },
                     );
                 }
             }
@@ -229,7 +252,10 @@ pub fn cancel_export(app: AppHandle) -> Result<(), String> {
         kill_process_tree(&mut child);
         let _ = app.emit(
             "export-done",
-            DonePayload { status: "canceled".into(), message: None },
+            DonePayload {
+                status: "canceled".into(),
+                message: None,
+            },
         );
     }
     Ok(())

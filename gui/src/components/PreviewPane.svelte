@@ -45,7 +45,11 @@
       linear-gradient(45deg, transparent 75%, #444 75%),
       linear-gradient(-45deg, transparent 75%, #444 75%);
     background-size: 20px 20px;
-    background-position: 0 0, 0 10px, 10px -10px, -10px 0;
+    background-position:
+      0 0,
+      0 10px,
+      10px -10px,
+      -10px 0;
   }
   .canvas img {
     width: 100%;
@@ -58,6 +62,11 @@
     color: #666;
     font-family: ui-monospace, "Cascadia Code", Menlo, monospace;
   }
-  .empty { color: #888; font-size: 0.95rem; }
-  .busy { opacity: 0.85; }
+  .empty {
+    color: #888;
+    font-size: 0.95rem;
+  }
+  .busy {
+    opacity: 0.85;
+  }
 </style>

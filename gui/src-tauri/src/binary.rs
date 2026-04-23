@@ -34,9 +34,16 @@ pub fn resolve(
 #[tauri::command]
 pub fn probe_ffmpeg(override_path: Option<PathBuf>) -> Result<PathBuf, String> {
     let exe = std::env::current_exe().map_err(|e| e.to_string())?;
-    let binary_name = if cfg!(windows) { "ffmpeg.exe" } else { "ffmpeg" };
+    let binary_name = if cfg!(windows) {
+        "ffmpeg.exe"
+    } else {
+        "ffmpeg"
+    };
     let path = resolve(override_path.as_deref(), &exe, binary_name).ok_or_else(|| {
-        format!("{} not found (checked sibling, PATH, override)", binary_name)
+        format!(
+            "{} not found (checked sibling, PATH, override)",
+            binary_name
+        )
     })?;
     let output = Command::new(&path)
         .arg("-version")

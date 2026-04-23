@@ -5,6 +5,7 @@ Desktop wrapper (Tauri 2 + Svelte + TypeScript) around the `cycling-overlay` CLI
 ## Development
 
 Prerequisites:
+
 - Rust toolchain (workspace root has one)
 - Node 20+ and `npm`
 - `cargo-tauri` CLI: `cargo install tauri-cli --version '^2.0' --locked`

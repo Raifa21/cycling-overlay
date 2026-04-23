@@ -49,7 +49,7 @@ pub fn watch_layout(
             let first = match rx.recv() {
                 Ok(Ok(ev)) => ev,
                 Ok(Err(_)) => continue, // notify internal error, ignore
-                Err(_) => return,        // channel closed (watcher dropped)
+                Err(_) => return,       // channel closed (watcher dropped)
             };
             if !matches!(first.kind, EventKind::Modify(_) | EventKind::Create(_)) {
                 continue;
@@ -57,7 +57,7 @@ pub fn watch_layout(
             // Quiet-period drain: each event restarts the timeout.
             loop {
                 match rx.recv_timeout(DEBOUNCE) {
-                    Ok(_) => continue, // more activity — reset timer
+                    Ok(_) => continue,                       // more activity — reset timer
                     Err(RecvTimeoutError::Timeout) => break, // quiet — reload
                     Err(RecvTimeoutError::Disconnected) => return,
                 }
@@ -65,9 +65,8 @@ pub fn watch_layout(
 
             match std::fs::read_to_string(&path_clone)
                 .map_err(|e| e.to_string())
-                .and_then(|s| {
-                    serde_json::from_str::<layout::Layout>(&s).map_err(|e| e.to_string())
-                }) {
+                .and_then(|s| serde_json::from_str::<layout::Layout>(&s).map_err(|e| e.to_string()))
+            {
                 Ok(new_layout) => {
                     if let Some(state) = app_clone.try_state::<AppState>() {
                         state.set_layout(new_layout, path_clone.clone());

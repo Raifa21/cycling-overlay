@@ -1,10 +1,5 @@
 import { writable, type Writable } from "svelte/store";
-import type {
-  SessionState,
-  ActivityInfo,
-  LayoutInfo,
-  ProgressPayload,
-} from "./types";
+import type { SessionState, ActivityInfo, LayoutInfo, ProgressPayload } from "./types";
 import { sessionSave } from "./tauri";
 
 const defaultSession: SessionState = {

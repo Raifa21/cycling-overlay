@@ -28,5 +28,7 @@
     cursor: pointer;
     font-weight: 600;
   }
-  button:hover { background: #eee; }
+  button:hover {
+    background: #eee;
+  }
 </style>

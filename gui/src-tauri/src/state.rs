@@ -65,10 +65,7 @@ pub struct LayoutInfo {
 }
 
 #[tauri::command]
-pub fn load_activity(
-    state: tauri::State<AppState>,
-    path: PathBuf,
-) -> Result<ActivityInfo, String> {
+pub fn load_activity(state: tauri::State<AppState>, path: PathBuf) -> Result<ActivityInfo, String> {
     let ext = path
         .extension()
         .and_then(|e| e.to_str())
@@ -97,10 +94,7 @@ pub fn load_activity(
 }
 
 #[tauri::command]
-pub fn load_layout(
-    state: tauri::State<AppState>,
-    path: PathBuf,
-) -> Result<LayoutInfo, String> {
+pub fn load_layout(state: tauri::State<AppState>, path: PathBuf) -> Result<LayoutInfo, String> {
     let s = std::fs::read_to_string(&path).map_err(|e| e.to_string())?;
     let layout: Layout = serde_json::from_str(&s).map_err(|e| format!("parse error: {}", e))?;
     let info = LayoutInfo {

@@ -27,7 +27,9 @@
     requestPreview(v, DOWNSCALE_WIDTH);
   }
 
-  function onDown() { dragging = true; }
+  function onDown() {
+    dragging = true;
+  }
 
   function onUp() {
     if (!dragging) return;

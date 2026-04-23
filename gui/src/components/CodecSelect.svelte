@@ -2,10 +2,10 @@
   import { session } from "../lib/stores";
 
   const CODECS = [
-    { id: "prores4444",  label: "prores",      desc: "transparent alpha (largest files)" },
-    { id: "h264_nvenc",  label: "h264_nvenc",  desc: "fast, NVIDIA GPU acceleration" },
-    { id: "hevc_nvenc",  label: "hevc_nvenc",  desc: "smallest files, NVIDIA GPU acceleration" },
-    { id: "h264",        label: "h264",        desc: "no NVIDIA GPU, small filesize (CPU encode)" },
+    { id: "prores4444", label: "prores", desc: "transparent alpha (largest files)" },
+    { id: "h264_nvenc", label: "h264_nvenc", desc: "fast, NVIDIA GPU acceleration" },
+    { id: "hevc_nvenc", label: "hevc_nvenc", desc: "smallest files, NVIDIA GPU acceleration" },
+    { id: "h264", label: "h264", desc: "no NVIDIA GPU, small filesize (CPU encode)" },
   ];
 
   $: isAlpha = $session.codec === "prores4444";
@@ -45,7 +45,8 @@
     color: #ddd;
     font-size: 0.9rem;
   }
-  select, input {
+  select,
+  input {
     padding: 0.3rem;
     background: #333;
     color: #eee;

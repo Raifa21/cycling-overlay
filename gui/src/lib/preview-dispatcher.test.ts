@@ -26,9 +26,7 @@ describe("preview-dispatcher latest-wins", () => {
   });
 
   it("applies responses in order when they arrive in order", async () => {
-    (previewFrame as any)
-      .mockResolvedValueOnce("A")
-      .mockResolvedValueOnce("B");
+    (previewFrame as any).mockResolvedValueOnce("A").mockResolvedValueOnce("B");
     await requestPreview(1);
     await requestPreview(2);
     const calls = setImage.mock.calls.map((c) => c[0]);
@@ -38,12 +36,17 @@ describe("preview-dispatcher latest-wins", () => {
   it("drops stale responses that resolve after newer ones", async () => {
     let resolveA!: (v: string) => void;
     (previewFrame as any)
-      .mockImplementationOnce(() => new Promise<string>((r) => { resolveA = r; }))
+      .mockImplementationOnce(
+        () =>
+          new Promise<string>((r) => {
+            resolveA = r;
+          }),
+      )
       .mockResolvedValueOnce("B");
     const pa = requestPreview(1);
     const pb = requestPreview(2);
-    await pb;                  // B resolves first -> image = "B"
-    resolveA("A_STALE");        // A resolves after -> should be dropped
+    await pb; // B resolves first -> image = "B"
+    resolveA("A_STALE"); // A resolves after -> should be dropped
     await pa;
     const calls = setImage.mock.calls.map((c) => c[0]);
     expect(calls).toEqual(["B"]); // never applied A_STALE

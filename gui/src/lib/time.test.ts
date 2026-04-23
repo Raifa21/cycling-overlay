@@ -28,9 +28,9 @@ describe("parseTimeSpec", () => {
   });
 
   it("rejects out-of-range components", () => {
-    expect(parseTimeSpec("1:60")).toBeNull();     // seconds must be < 60
+    expect(parseTimeSpec("1:60")).toBeNull(); // seconds must be < 60
     expect(parseTimeSpec("1:90")).toBeNull();
-    expect(parseTimeSpec("1:60:00")).toBeNull();  // minutes must be < 60
+    expect(parseTimeSpec("1:60:00")).toBeNull(); // minutes must be < 60
     expect(parseTimeSpec("-1")).toBeNull();
   });
 });
