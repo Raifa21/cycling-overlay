@@ -1,6 +1,9 @@
 # cycling-overlay
 
-Render ride/run telemetry — speed, HR, power, cadence, distance, elevation, course map, gradient, W/kg, time — as a video overlay you can drop onto your action-cam footage in any editor. Takes a GPX or FIT activity file plus a JSON layout, outputs a transparent-background MOV (ProRes 4444) or a chromakey-fill MP4 (H.264 / HEVC).
+Render ride telemetry — speed, HR, power, cadence, distance, elevation, course map, gradient, W/kg, time — as a video overlay you can drop onto your action-cam footage in any editor. Takes a GPX or FIT activity file plus a JSON layout, outputs a transparent-background MOV (ProRes 4444) or a chromakey-fill MP4 (H.264 / HEVC).
+
+<img width="2560" height="1392" alt="image" src="https://github.com/user-attachments/assets/70a57d11-cf1a-47ea-97d4-a1528ffe5032" />
+
 
 ## Highlights
 
