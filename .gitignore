@@ -1,2 +1,5 @@
 .worktrees/
 target/
+gui/src-tauri/gen/
+gui/build/*
+!gui/build/.gitkeep
