@@ -17,6 +17,7 @@ const defaultSession: SessionState = {
   from_seconds: 0,
   to_seconds: null,
   cli_path_override: null,
+  ffmpeg_path_override: null,
 };
 
 export const session: Writable<SessionState> = writable(defaultSession);

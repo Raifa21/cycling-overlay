@@ -8,6 +8,7 @@ export interface SessionState {
   from_seconds: number;
   to_seconds: number | null;
   cli_path_override: string | null;
+  ffmpeg_path_override: string | null;
 }
 
 export interface ActivityInfo {
@@ -51,4 +52,5 @@ export interface ExportArgs {
   chromakey: string;
   from_seconds: number;
   to_seconds: number;
+  ffmpeg_path_override: string | null;
 }

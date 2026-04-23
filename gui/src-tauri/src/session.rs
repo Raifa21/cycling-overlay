@@ -1,5 +1,7 @@
 use serde::{Deserialize, Serialize};
+use std::fs;
 use std::path::PathBuf;
+use tauri::Manager;
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 #[serde(default)]
@@ -13,6 +15,7 @@ pub struct SessionState {
     pub from_seconds: f64,
     pub to_seconds: Option<f64>,
     pub cli_path_override: Option<PathBuf>,
+    pub ffmpeg_path_override: Option<PathBuf>,
 }
 
 impl Default for SessionState {
@@ -27,6 +30,7 @@ impl Default for SessionState {
             from_seconds: 0.0,
             to_seconds: None,
             cli_path_override: None,
+            ffmpeg_path_override: None,
         }
     }
 }
@@ -38,9 +42,6 @@ pub fn load_from_str(s: &str) -> anyhow::Result<SessionState> {
 pub fn to_string(s: &SessionState) -> anyhow::Result<String> {
     Ok(serde_json::to_string_pretty(s)?)
 }
-
-use std::fs;
-use tauri::Manager;
 
 pub fn session_path(app: &tauri::AppHandle) -> anyhow::Result<PathBuf> {
     let dir = app
