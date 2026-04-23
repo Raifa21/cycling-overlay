@@ -20,6 +20,50 @@
   } from "../lib/tauri";
   import CodecSelect from "./CodecSelect.svelte";
   import { ffmpegMissing, cliMissing } from "../lib/runtime-stores";
+  import { parseTimeSpec, formatTimeSpec } from "../lib/time";
+
+  // Local display state for the time-range inputs. Driven by the session
+  // store (so it updates when an activity loads and auto-fills the range),
+  // committed back to the store on blur/Enter after parseTimeSpec accepts
+  // the value. Invalid input reverts to the current session value.
+  let fromText = formatTimeSpec($session.from_seconds);
+  let toText = $session.to_seconds != null ? formatTimeSpec($session.to_seconds) : "";
+  let fromInvalid = false;
+  let toInvalid = false;
+
+  $: fromText = formatTimeSpec($session.from_seconds);
+  $: toText = $session.to_seconds != null ? formatTimeSpec($session.to_seconds) : "";
+
+  function commitFrom() {
+    const val = parseTimeSpec(fromText);
+    if (val == null) {
+      fromInvalid = true;
+      return;
+    }
+    fromInvalid = false;
+    if (val !== $session.from_seconds) {
+      session.update((s) => ({ ...s, from_seconds: val }));
+    }
+  }
+
+  function commitTo() {
+    const val = parseTimeSpec(toText);
+    if (val == null) {
+      toInvalid = true;
+      return;
+    }
+    toInvalid = false;
+    if (val !== $session.to_seconds) {
+      session.update((s) => ({ ...s, to_seconds: val }));
+    }
+  }
+
+  function onKeydown(e: KeyboardEvent, commit: () => void) {
+    if (e.key === "Enter") {
+      (e.target as HTMLInputElement).blur(); // triggers on:change → commit
+      commit();
+    }
+  }
 
   async function pickInput() {
     const path = await open({
@@ -147,22 +191,26 @@
   <CodecSelect />
 
   <div class="row">
-    <label>Time range (seconds)</label>
+    <label>Time range (HH:MM:SS)</label>
     <div class="time-row">
       <input
-        type="number"
-        min="0"
-        step="1"
-        bind:value={$session.from_seconds}
-        placeholder="from"
+        type="text"
+        inputmode="numeric"
+        bind:value={fromText}
+        on:change={commitFrom}
+        on:keydown={(e) => onKeydown(e, commitFrom)}
+        class:invalid={fromInvalid}
+        placeholder="00:00:00"
       />
       <span>→</span>
       <input
-        type="number"
-        min="0"
-        step="1"
-        bind:value={$session.to_seconds}
-        placeholder="to"
+        type="text"
+        inputmode="numeric"
+        bind:value={toText}
+        on:change={commitTo}
+        on:keydown={(e) => onKeydown(e, commitTo)}
+        class:invalid={toInvalid}
+        placeholder="00:00:00"
       />
     </div>
   </div>
@@ -228,7 +276,9 @@
     background: #333;
     color: #eee;
     border: 1px solid #444;
+    font-family: ui-monospace, "Cascadia Code", Menlo, monospace;
   }
+  .time-row input.invalid { border-color: #a33; }
   .time-row span { color: #888; }
   .primary {
     margin-top: 1rem;
