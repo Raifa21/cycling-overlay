@@ -54,11 +54,7 @@
 
 <footer class="footer" class:running={$exportStatus === "running"}>
   {#if showFooter}
-    <Collapsible.Root
-      open={!collapsed}
-      onOpenChange={(v) => (collapsed = !v)}
-      class="collapsible"
-    >
+    <Collapsible.Root open={!collapsed} onOpenChange={(v) => (collapsed = !v)} class="collapsible">
       <div class="top">
         <Progress.Root max={100} value={pct} class="bar">
           <div class="fill" style="width: {pct}%"></div>
