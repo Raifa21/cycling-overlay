@@ -53,7 +53,12 @@
     ? `${Math.round($exportProgress.eta_seconds)}s`
     : "—";
 
-  $: showFooter = $exportStatus === "running" || $exportProgress !== null;
+  // Stay visible through every non-idle state so an immediate failure
+  // (e.g. the CLI rejecting argv before the first progress line) still
+  // shows the FAILED badge + auto-expanded log. Prior condition hid the
+  // footer whenever $exportProgress was null, which silently swallowed
+  // those early failures.
+  $: showFooter = $exportStatus !== "idle";
 </script>
 
 <footer class="footer" class:running={$exportStatus === "running"}>
