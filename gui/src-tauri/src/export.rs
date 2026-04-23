@@ -20,6 +20,8 @@ pub struct ExportArgs {
     pub chromakey: String,
     pub from_seconds: f64,
     pub to_seconds: f64,
+    #[serde(default)]
+    pub ffmpeg_path_override: Option<PathBuf>,
 }
 
 #[derive(Serialize, Clone)]
@@ -89,6 +91,38 @@ pub async fn start_export(
         .stdout(Stdio::null())
         .stderr(Stdio::piped());
 
+    // If the GUI has an ffmpeg override, prepend its directory to PATH so
+    // the CLI's spawned ffmpeg resolves to the override binary.
+    if let Some(override_path) = args.ffmpeg_path_override.as_ref() {
+        if let Some(dir) = override_path.parent() {
+            let existing = std::env::var_os("PATH").unwrap_or_default();
+            let mut paths: Vec<PathBuf> =
+                std::env::split_paths(&existing).collect();
+            paths.insert(0, dir.to_path_buf());
+            if let Ok(joined) = std::env::join_paths(paths) {
+                cmd.env("PATH", joined);
+            }
+        }
+    }
+
+    // On Unix, put the child in its own process group so cancel can signal
+    // the whole tree (CLI + its ffmpeg grandchild) with one killpg.
+    #[cfg(unix)]
+    {
+        use std::os::unix::process::CommandExt;
+        unsafe {
+            cmd.pre_exec(|| {
+                // setpgid(0, 0) makes this process the leader of a new
+                // process group whose pgid == its pid. Must be called in
+                // the child before exec.
+                if libc::setpgid(0, 0) == -1 {
+                    return Err(std::io::Error::last_os_error());
+                }
+                Ok(())
+            });
+        }
+    }
+
     let mut child = cmd.spawn().map_err(|e| e.to_string())?;
     let stderr = child.stderr.take().ok_or("no stderr pipe")?;
 
@@ -102,13 +136,11 @@ pub async fn start_export(
     tauri::async_runtime::spawn(async move {
         let mut reader = BufReader::new(stderr).lines();
         let started = Instant::now();
-        let mut last_total: u64 = 0;
         let mut saw_done = false;
 
         while let Ok(Some(line)) = reader.next_line().await {
             match parse_line(&line) {
                 Some(ProgressLine::Progress { frame, total }) => {
-                    last_total = total;
                     let elapsed = started.elapsed().as_secs_f64();
                     let fps = if elapsed > 0.0 { frame as f64 / elapsed } else { 0.0 };
                     let eta = eta_seconds(frame, total, elapsed);
@@ -161,7 +193,6 @@ pub async fn start_export(
                 }
             }
         }
-        let _ = last_total; // silence unused if no progress lines ever arrived
     });
     Ok(())
 }
@@ -178,10 +209,11 @@ fn kill_process_tree(child: &mut Child) {
 #[cfg(not(windows))]
 fn kill_process_tree(child: &mut Child) {
     if let Some(pid) = child.id() {
-        // SIGTERM gives the CLI a chance to clean up its ffmpeg child. The
-        // CLI installs a Ctrl-C handler that should cascade.
+        // Child was spawned with setpgid(0,0), so its pgid == pid. Signal
+        // the whole group so ffmpeg (grandchild) goes down with the CLI
+        // even if the CLI's SIGTERM handler doesn't cascade quickly.
         unsafe {
-            libc::kill(pid as i32, libc::SIGTERM);
+            libc::kill(-(pid as i32), libc::SIGTERM);
         }
     }
 }

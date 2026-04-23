@@ -71,6 +71,10 @@
       filters: [{ name: "Activity", extensions: ["fit", "gpx"] }],
     });
     if (typeof path !== "string") return;
+    // Clear the stale preview immediately; if load + render succeed we'll
+    // replace it below, but on failure the pane should not keep showing
+    // the previous activity's frame.
+    previewImage.set(null);
     try {
       const info = await loadActivity(path);
       loadError.set(null);
@@ -153,6 +157,7 @@
         chromakey: $session.chromakey,
         from_seconds: $session.from_seconds,
         to_seconds: $session.to_seconds,
+        ffmpeg_path_override: $session.ffmpeg_path_override,
       });
     } catch (e) {
       exportStatus.set("error");

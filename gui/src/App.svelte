@@ -38,7 +38,7 @@
       return;
     }
 
-    probeFfmpeg(s.cli_path_override ?? undefined)
+    probeFfmpeg(s.ffmpeg_path_override ?? undefined)
       .then(() => ffmpegMissing.set(false))
       .catch(() => ffmpegMissing.set(true));
     probeCli(s.cli_path_override ?? undefined)
@@ -74,10 +74,10 @@
   }
 
   async function setFfmpegPath() {
-    // v1: no dedicated override for ffmpeg (the plan defers this). Button
-    // currently just re-probes with the CLI override path, in case the user
-    // fixed PATH externally and wants to dismiss the banner.
-    probeFfmpeg()
+    const path = await open({ multiple: false });
+    if (typeof path !== "string") return;
+    session.update((s) => ({ ...s, ffmpeg_path_override: path }));
+    probeFfmpeg(path)
       .then(() => ffmpegMissing.set(false))
       .catch(() => ffmpegMissing.set(true));
   }
