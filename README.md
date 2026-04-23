@@ -95,6 +95,12 @@ Iterate by keeping the GUI open with the layout loaded — the watcher auto-relo
 - **GPX without extensions** carries no HR / power / cadence — those widgets will show `--`.
 - **macOS distribution** is unsigned for v1; right-click → Open the first time you launch a packaged build.
 
+## License
+
+This project is released under the [MIT License](LICENSE.md).
+
+The bundled **Inter** and **Roboto** fonts are distributed under the [SIL Open Font License 1.1](https://openfontlicense.org). See [`crates/render/assets/Inter-OFL.txt`](crates/render/assets/Inter-OFL.txt) and [`crates/render/assets/Roboto-OFL.txt`](crates/render/assets/Roboto-OFL.txt) for the full terms. If you redistribute this project or a binary built from it, those licenses travel with the fonts.
+
 ## Further reading
 
 - [`docs/layouts.md`](docs/layouts.md) — layout authoring guide.
