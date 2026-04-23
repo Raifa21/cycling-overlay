@@ -17,7 +17,7 @@
   } from "./lib/tauri";
   import { requestPreview } from "./lib/preview-dispatcher";
   import { session, previewT } from "./lib/stores";
-  import { ffmpegMissing, cliMissing } from "./lib/runtime-stores";
+  import { ffmpegMissing, cliMissing, loadError } from "./lib/runtime-stores";
 
   let layoutError: string | null = null;
   const unlistens: UnlistenFn[] = [];
@@ -90,6 +90,12 @@
   {#if $cliMissing}
     <StartupBanner kind="cli" onSetPath={setCliPath} />
   {/if}
+  {#if $loadError}
+    <div class="load-error" role="alert">
+      <span>{$loadError}</span>
+      <button class="dismiss" on:click={() => loadError.set(null)} aria-label="Dismiss">×</button>
+    </div>
+  {/if}
   {#if layoutError}
     <div class="layout-error" role="alert">
       <span>Layout parse error: {layoutError}</span>
@@ -138,4 +144,24 @@
     padding: 0.4rem 1rem;
     font-size: 0.85rem;
   }
+  .load-error {
+    background: #a33;
+    color: white;
+    padding: 0.5rem 1rem;
+    font-size: 0.9rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1rem;
+  }
+  .load-error .dismiss {
+    background: transparent;
+    border: 0;
+    color: white;
+    font-size: 1.3rem;
+    line-height: 1;
+    cursor: pointer;
+    padding: 0 0.3rem;
+  }
+  .load-error .dismiss:hover { color: #eee; }
 </style>

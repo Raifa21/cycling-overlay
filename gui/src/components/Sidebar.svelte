@@ -19,7 +19,7 @@
     probeCli,
   } from "../lib/tauri";
   import CodecSelect from "./CodecSelect.svelte";
-  import { ffmpegMissing, cliMissing } from "../lib/runtime-stores";
+  import { ffmpegMissing, cliMissing, loadError } from "../lib/runtime-stores";
   import { parseTimeSpec, formatTimeSpec } from "../lib/time";
 
   // Local display state for the time-range inputs. Driven by the session
@@ -73,6 +73,7 @@
     if (typeof path !== "string") return;
     try {
       const info = await loadActivity(path);
+      loadError.set(null);
       activityInfo.set(info);
       session.update((s) => ({
         ...s,
@@ -89,7 +90,7 @@
         console.debug("initial preview skipped:", e);
       }
     } catch (e) {
-      console.error("load_activity failed:", e);
+      loadError.set(`Failed to load activity ${path}: ${e}`);
     }
   }
 
@@ -101,6 +102,7 @@
     if (typeof path !== "string") return;
     try {
       const info = await loadLayout(path);
+      loadError.set(null);
       layoutInfo.set(info);
       session.update((s) => ({ ...s, layout_path: path }));
       await watchLayout(path);
@@ -113,7 +115,7 @@
         }
       }
     } catch (e) {
-      console.error("load_layout failed:", e);
+      loadError.set(`Failed to load layout ${path}: ${e}`);
     }
   }
 
