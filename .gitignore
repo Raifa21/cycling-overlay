@@ -3,3 +3,7 @@ target/
 gui/src-tauri/gen/
 gui/build/*
 !gui/build/.gitkeep
+
+# Developer-local fixtures and wrapper scripts: do not track.
+examples/ride.fit
+run.ps1
