@@ -5,64 +5,71 @@
     "theme": {
         "font": "Inter",
         "fg": "#ffffff",
-        "accent": "#ffcc00",
+        "accent": "#00cccc",
         "shadow": null
     },
-    "rider": { "weight_kg": 55.8 },
+    "rider": { "weight_kg": 55.0 },
     "widgets": [
         {
             "type": "readout", "id": "power_readout",
             "metric": "power",
-            "rect": { "x": 80, "y": 760, "w": 280, "h": 140 },
+            "rect": { "x": 300, "y": 760, "w": 280, "h": 140 },
             "label": "POWER", "decimals": 0, "font_size": 80.0,
             "unit_font_size": 32.0
         },
         {
             "type": "readout", "id": "wkg_readout",
             "metric": "w_per_kg",
-            "rect": { "x": 80, "y": 900, "w": 280, "h": 140 },
+            "rect": { "x": 300, "y": 900, "w": 280, "h": 140 },
             "label": "W/KG", "decimals": 1, "font_size": 80.0,
             "unit_font_size": 32.0
         },
         {
             "type": "readout", "id": "hr_readout",
             "metric": "heart_rate",
-            "rect": { "x": 80, "y": 620, "w": 280, "h": 140 },
+            "rect": { "x": 300, "y": 620, "w": 280, "h": 140 },
             "label": "HR", "decimals": 0, "font_size": 80.0,
             "unit_font_size": 32.0
         },
         {
             "type": "readout", "id": "distance_readout",
             "metric": "distance",
-            "rect": { "x": 80, "y": 480, "w": 280, "h": 140 },
+            "rect": { "x": 300, "y": 480, "w": 280, "h": 140 },
             "label": "DIST", "decimals": 2, "font_size": 80.0,
             "unit_font_size": 32.0
         },
         {
             "type": "readout", "id": "speed_readout",
             "metric": "speed",
-            "rect": { "x": 80, "y": 340, "w": 280, "h": 140 },
+            "rect": { "x": 300, "y": 340, "w": 280, "h": 140 },
             "label": "SPEED", "decimals": 1, "font_size": 80.0,
             "unit_font_size": 32.0
         },
         {
             "type": "readout", "id": "cadence_readout",
             "metric": "cadence",
-            "rect": { "x": 360, "y": 340, "w": 280, "h": 140 },
+            "rect": { "x": 1580, "y": 340, "w": 280, "h": 140 },
             "label": "CAD", "decimals": 0, "font_size": 80.0,
             "unit_font_size": 32.0
         },
         {
             "type": "readout", "id": "time_elapsed_readout",
             "metric": "time_elapsed",
-            "rect": { "x": 360, "y": 480, "w": 280, "h": 140 },
+            "rect": { "x": 1580, "y": 480, "w": 280, "h": 140 },
             "label": "TIME", "decimals": 0, "font_size": 80.0,
+            "unit_font_size": 32.0
+        },
+        {
+            "type": "readout", "id": "elev_gain_readout",
+            "metric": "elev_gain",
+            "rect": { "x": 1580, "y": 620, "w": 280, "h": 140 },
+            "label": "ELEV", "decimals": 0, "font_size": 80.0,
             "unit_font_size": 32.0
         },
         {
             "type": "bar", "id": "distance_bar",
             "metric": "distance",
-            "rect": { "x": 60, "y": 260, "w": 1800, "h": 40 },
+            "rect": { "x": 50, "y": 260, "w": 1460, "h": 40 },
             "show_text": true,
             "decimals": 2
         },
@@ -74,22 +81,33 @@
         },
         {
             "type": "elevation_profile", "id": "elev_profile",
-            "rect": { "x": 60, "y": 60, "w": 1460, "h": 180 }
+            "rect": { "x": 50, "y": 60, "w": 1460, "h": 180 }
         },
         {
             "type": "meter", "id": "speed_meter",
             "metric": "speed",
-            "rect": { "x": 680, "y": 340, "w": 600, "h": 60 },
-            "min": 0.0, "max": 60.0,
-            "orientation": "horizontal",
+            "rect": { "x": 40, "y": 360, "w": 60, "h": 650 },
+            "min": 0.0, "max": 50.0,
+            "orientation": "vertical",
             "indicator": { "kind": "needle", "fill_under": true },
-            "ticks": { "show_numbers": true, "decimals": 0 }
+            "ticks": { "show_numbers": true, "decimals": 0 },
+            "show_value": true
+        },        
+        {
+            "type": "meter", "id": "power_meter",
+            "metric": "power",
+            "rect": { "x": 160, "y": 360, "w": 60, "h": 650 },
+            "min": 0.0, "max": 600.0,
+            "orientation": "vertical",
+            "indicator": { "kind": "arrow", "fill_under": true },
+            "ticks": { "show_numbers": true, "decimals": 0 },
+            "show_value": true
         },
         {
             "type": "gauge", "id": "power_gauge",
             "metric": "power",
-            "rect": { "x": 1580, "y": 400, "w": 280, "h": 280 },
-            "min": 0.0, "max": 500.0,
+            "rect": { "x": 1580, "y": 760, "w": 280, "h": 280 },
+            "min": 0.0, "max": 1200.0,
             "indicator": { "kind": "needle", "fill_under": true },
             "ticks": { "show_numbers": true, "decimals": 0 },
             "show_value": true
